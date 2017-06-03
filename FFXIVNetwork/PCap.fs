@@ -48,20 +48,21 @@ type GamePacketQueueV2() =
             logger.Debug(sprintf "current  seqs:%A" tcp.SequenceNumber)
             let seq = tcp.SequenceNumber
             if dict.ContainsKey(seq) then
-                let merged = Array.append dict.[seq] [|tcp|]
-                let bytes = getBytes merged
-                logger.Debug(Utils.HexString.toHex(bytes))
-                let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
-                dict.Remove(seq) |> ignore
-                if res.IsSome then
-                    logger.Debug("Indirect packet Hit!")
-                    evt.Trigger(bytes)
-                else
-                    logger.Debug(sprintf "Readd %i" tcp.NextSequenceNumber)
-                    dict.Add(tcp.NextSequenceNumber, merged)
+                sLock (fun () ->
+                    let merged = Array.append dict.[seq] [|tcp|]
+                    let bytes = getBytes merged
+                    logger.Debug(Utils.HexString.toHex(bytes))
+                    let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
+                    dict.Remove(seq) |> ignore
+                    if res.IsSome then
+                        logger.Debug("Indirect packet Hit!")
+                        evt.Trigger(bytes)
+                    else
+                        logger.Debug(sprintf "Readd %i" tcp.NextSequenceNumber)
+                        dict.Add(tcp.NextSequenceNumber, merged))
             else // 没找到，新建一个
                 logger.Debug(sprintf "Add %i" tcp.NextSequenceNumber)
-                dict.Add(tcp.NextSequenceNumber, [| tcp |])
+                sLock (fun () -> dict.Add(tcp.NextSequenceNumber, [| tcp |]))
 
 
 let queue = 

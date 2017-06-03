@@ -22,5 +22,12 @@ let PacketHandler (bytes : byte []) =
                 sb.AppendLine("====MarketDataEnd====") |> ignore
                 NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
             | Opcodes.TradeLog ->
-                ()
+                let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
+                let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
+                for log in tradeLogs.Records do
+                    let item = Database.XIVItemDict.[log.ItemID |> int].ToString()
+                    let str = sprintf "%s P:%i C:%i HQ:%b Buyer:%s" item log.Price log.Count log.IsHQ log.BuyerName
+                    sb.AppendLine(str) |> ignore
+                sb.AppendLine("====TradeLogDataEnd====") |> ignore
+                NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
             | _ -> ()

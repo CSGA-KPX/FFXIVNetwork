@@ -17,22 +17,29 @@ type TradeLogRecord =
         Price       : uint32
         TimeStamp   : uint32
         Count       : uint32
-        Unknown2    : uint16
-        SellerName  : string
+        IsHQ        : bool
+        Unknown     : byte
+        BuyerName  : string
     }
-
-    static member Parse(r : BinaryReader) = 
+    static member ParseFromBytes(bytes : byte[]) = 
         [|
             let recordSize = 52
-            let bs = r.BaseStream
-            while bs.Length - bs.Position >= 52L do
+            let chunks = 
+                bytes 
+                |> Array.chunkBySize recordSize
+                |> Array.filter (fun x -> x.Length = recordSize)
+                |> Array.filter (fun x -> Utils.IsByteArrayAllZero(x))
+            for chunk in chunks do
+                use ms = new MemoryStream(chunk)
+                use r  = new BinaryReader(ms)
                 yield {
                     ItemID      = r.ReadUInt32()
                     Price       = r.ReadUInt32()
                     TimeStamp   = r.ReadUInt32()
                     Count       = r.ReadUInt32()
-                    Unknown2    = r.ReadUInt16()
-                    SellerName  = 
+                    IsHQ        = r.ReadByte() = 1uy
+                    Unknown     = r.ReadByte()
+                    BuyerName  = 
                                     let bytes = r.ReadBytes(34)
                                     Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])
                 }
@@ -42,19 +49,20 @@ type TradeLogPacket =
     {
         ItemID : uint32
         Records: TradeLogRecord []
-        Unknown: byte []
     }
     static member ParseFromBytes(bytes : byte[]) = 
         use ms = new MemoryStream(bytes)
         use r  = new BinaryReader(ms)
         let itemId = r.ReadUInt32()
-        let records= TradeLogRecord.Parse(r)
-        let unknown= r.ReadBytes(4)
-        
+        let restBytes = 
+            let bs = r.BaseStream
+            let len = bs.Length - bs.Position
+            r.ReadBytes(len |> int)
+        let records= TradeLogRecord.ParseFromBytes(restBytes)
+
         {
             ItemID  = itemId
             Records = records
-            Unknown = unknown
         }
 
 type MarketArea = 
@@ -85,7 +93,7 @@ type MarketPacket =
             let chunks = 
                 bytes 
                 |> Array.chunkBySize recordSize
-                |> Array.filter (fun x -> x.Length = 112)
+                |> Array.filter (fun x -> x.Length = recordSize)
                 |> Array.filter (fun x -> Utils.IsByteArrayAllZero(x))
             for chunk in chunks do
                 use ms = new MemoryStream(chunk)
@@ -191,14 +199,18 @@ type FFXIVBasePacket =
     }
 
     static member TakePacket(bytes : byte []) = 
-        let size = BitConverter.ToUInt16(bytes, 24) |> int
-
-        if size = 0 || size > 0x10000 || (size > bytes.Length) then
+        if bytes.Length < 24 then
             None
         else
-            let p = bytes.[0 .. size - 1]
-            let r = bytes.[size .. ]
-            Some((p, r))
+            let size = BitConverter.ToUInt16(bytes, 24) |> int
+
+            if size = 0 || size > 0x10000 || (size > bytes.Length) then
+                None
+            else
+                let p = bytes.[0 .. size - 1]
+                let r = bytes.[size .. ]
+                Some((p, r))
+        
 
     static member ParseFromBytes(bytes : byte[]) = 
         use ms = new MemoryStream(bytes)
