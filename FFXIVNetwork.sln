@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FFXIVNetwork", "FFXIVNetwork\FFXIVNetwork.fsproj", "{E9BD77FF-5078-4851-8D4B-DFA34254428D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPHelper", "..\..\..\..\Desktop\PCap.net\IPHelper.Net-master\Src\IPHelper\IPHelper.csproj", "{640B925B-8F4C-4891-84FC-648DA3DB3625}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPHelper", "IPHelper.Net\Src\IPHelper\IPHelper.csproj", "{640B925B-8F4C-4891-84FC-648DA3DB3625}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

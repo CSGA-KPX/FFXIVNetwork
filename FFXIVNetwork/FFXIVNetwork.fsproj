@@ -109,7 +109,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\Desktop\PCap.net\IPHelper.Net-master\Src\IPHelper\IPHelper.csproj">
+    <ProjectReference Include="..\IPHelper.Net\Src\IPHelper\IPHelper.csproj">
       <Name>IPHelper</Name>
       <Project>{640b925b-8f4c-4891-84fc-648da3db3625}</Project>
       <Private>True</Private>

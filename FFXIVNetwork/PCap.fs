@@ -41,27 +41,27 @@ type GamePacketQueueV2() =
         let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
         if res.IsSome then
             //当前段已经完整
-            logger.Debug("Direct packet Hit!")
+            logger.Trace("Direct packet Hit!")
             evt.Trigger(bytes)
         else
-            logger.Debug(sprintf "All next seqs:%A" dict.Keys)
-            logger.Debug(sprintf "current  seqs:%A" tcp.SequenceNumber)
+            logger.Trace(sprintf "All next seqs:%A" dict.Keys)
+            logger.Trace(sprintf "current  seqs:%A" tcp.SequenceNumber)
             let seq = tcp.SequenceNumber
             if dict.ContainsKey(seq) then
                 sLock (fun () ->
                     let merged = Array.append dict.[seq] [|tcp|]
                     let bytes = getBytes merged
-                    logger.Debug(Utils.HexString.toHex(bytes))
+                    logger.Trace(Utils.HexString.toHex(bytes))
                     let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
                     dict.Remove(seq) |> ignore
                     if res.IsSome then
-                        logger.Debug("Indirect packet Hit!")
+                        logger.Trace("Indirect packet Hit!")
                         evt.Trigger(bytes)
                     else
-                        logger.Debug(sprintf "Readd %i" tcp.NextSequenceNumber)
+                        logger.Trace(sprintf "Readd %i" tcp.NextSequenceNumber)
                         dict.Add(tcp.NextSequenceNumber, merged))
             else // 没找到，新建一个
-                logger.Debug(sprintf "Add %i" tcp.NextSequenceNumber)
+                logger.Trace(sprintf "Add %i" tcp.NextSequenceNumber)
                 sLock (fun () -> dict.Add(tcp.NextSequenceNumber, [| tcp |]))
 
 
@@ -94,7 +94,7 @@ let PacketHandler (p:Packet) =
         let sb = new Text.StringBuilder()
         sb.AppendLine(sprintf "%s %s %s " time ipInfo tcpInfo)
           .AppendLine(sprintf "%s" (tcp.Payload.ToHexadecimalString())) |> ignore
-        NLog.LogManager.GetCurrentClassLogger().Debug(sb.ToString())
+        NLog.LogManager.GetCurrentClassLogger().Trace(sb.ToString())
         queue.Enqueue(tcp)
 
     | Income -> ()
