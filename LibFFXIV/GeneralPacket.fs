@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Compression
 open System.Text
 open LibFFXIV.Constants
+open LibFFXIV.Utils
 
 
 type FFXIVGamePacket = 
@@ -12,7 +13,7 @@ type FFXIVGamePacket =
         Magic     : uint16
         Opcode    : uint16
         Unknown1  : uint32
-        TimeStamp : uint32
+        TimeStamp : TimeStamp
         Unknown2  : uint32
         Data      : byte [] 
     }
@@ -24,7 +25,7 @@ type FFXIVGamePacket =
         assert (magic = 0x0014us)
         let opcode = r.ReadUInt16()
         let unk1 = r.ReadUInt32()
-        let ts   = r.ReadUInt32()
+        let ts   = TimeStamp.FromSeconds(r.ReadUInt32())
         let unk2 = r.ReadUInt32()
         let data = r.ReadBytes(bytes.Length - 0x10)
 
@@ -52,7 +53,7 @@ type FFXIVSubPacket =
             use ms = new MemoryStream(bytes)
             use r  = new BinaryReader(ms)
             
-            while not (Utils.IsBinaryReaderEnd(r)) do
+            while not (IsBinaryReaderEnd(r)) do
                 let len = r.ReadUInt32()
                 let sid = r.ReadUInt32()
                 let did = r.ReadUInt32()
@@ -67,7 +68,7 @@ type FFXIVSubPacket =
                         TargetId = did
                         Unknown  = unk
                         Data = data }
-            assert (Utils.IsBinaryReaderEnd(r))
+            assert (IsBinaryReaderEnd(r))
         |]
 
 
@@ -81,7 +82,7 @@ type FFXIVSubPacket =
 type FFXIVBasePacket = 
     {
         Magic     : byte [] // 16byte header
-        Timestamp : DateTime
+        Timestamp : TimeStamp
         PacketSize: uint16
         Unknown   : uint32
         ChunkCount: uint16
@@ -108,11 +109,10 @@ type FFXIVBasePacket =
         use r = new BinaryReader(ms)
         
         let magic = r.ReadBytes(16)
-        assert (Utils.HexString.toHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic)
+        assert (HexString.ToHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic)
         let time = 
-            (new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
-                .AddMilliseconds(r.ReadUInt64() |> float)
-                .ToLocalTime()
+            TimeStamp.FromMilliseconds(r.ReadUInt64())
+
         let packetSize= r.ReadUInt16()
         let unknown = r.ReadUInt32()
         let chunkCount= r.ReadUInt16()
@@ -140,7 +140,7 @@ type FFXIVBasePacket =
         
         let subPackets = FFXIVSubPacket.Parse(realPayload) 
 
-        assert (Utils.IsBinaryReaderEnd(r))
+        assert (IsBinaryReaderEnd(r))
         
         {
             Magic     = magic

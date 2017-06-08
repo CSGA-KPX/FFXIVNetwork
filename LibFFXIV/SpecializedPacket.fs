@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Compression
 open System.Text
 open LibFFXIV.Constants
+open LibFFXIV.Utils
 
 
 type TradeLogRecord = 
@@ -24,7 +25,7 @@ type TradeLogRecord =
                 bytes 
                 |> Array.chunkBySize recordSize
                 |> Array.filter (fun x -> x.Length = recordSize)
-                |> Array.filter (fun x -> Utils.IsByteArrayAllZero(x))
+                |> Array.filter (fun x -> IsByteArrayAllZero(x))
             for chunk in chunks do
                 use ms = new MemoryStream(chunk)
                 use r  = new BinaryReader(ms)
@@ -84,7 +85,7 @@ type MarketPacket =
                 bytes 
                 |> Array.chunkBySize recordSize
                 |> Array.filter (fun x -> x.Length = recordSize)
-                |> Array.filter (fun x -> Utils.IsByteArrayAllZero(x))
+                |> Array.filter (fun x -> IsByteArrayAllZero(x))
             for chunk in chunks do
                 use ms = new MemoryStream(chunk)
                 use r  = new BinaryReader(ms)

@@ -43,8 +43,7 @@ let PacketHandler (bytes : byte []) =
     for sp in packet.SubPackets do
         if sp.Type = 0x0003us then
             let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
-            logger.Info(sprintf "gp.Opcode = %i" gp.Opcode)
             match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
             | Opcodes.Market -> MarketPacketHandler(gp)
             | Opcodes.TradeLog -> TradeLogPacketHandler(gp)
-            | _ -> ()
+            | _ -> UnknownPacketHandler(gp)

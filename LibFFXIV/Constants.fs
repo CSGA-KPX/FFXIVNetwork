@@ -3,6 +3,7 @@
 type Opcodes = 
     | TradeLog = 0x00D8us
     | Market   = 0x00D3us
+    | Pong     = 0x0143us
 
 type MarketArea = 
   | LimsaLominsa = 0x0001
