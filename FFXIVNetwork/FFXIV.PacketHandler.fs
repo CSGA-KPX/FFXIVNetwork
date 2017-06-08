@@ -1,7 +1,9 @@
 ﻿module FFXIV.PacketHandler
 open System
 open System.Text
-open FFXIV.PacketTypes
+open LibFFXIV.Constants
+open LibFFXIV.GeneralPacket
+open LibFFXIV.SpecializedPacket
 
 let MarketPacketHandler (gp : FFXIVGamePacket) = 
     let marketDatas = MarketPacket.ParseFromBytes(gp.Data)
@@ -33,12 +35,15 @@ let UnknownPacketHandler (gp : FFXIVGamePacket) =
     let ts     = gp.TimeStamp
     let data   = Utils.HexString.toHex (gp.Data)
     NLog.LogManager.GetCurrentClassLogger().Info("UnknownGamePacket: Opcode:{0} TS:{1} Data:{2}", opcode, ts, data)
+    
+let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let PacketHandler (bytes : byte []) = 
     let packet = FFXIVBasePacket.ParseFromBytes(bytes)
     for sp in packet.SubPackets do
         if sp.Type = 0x0003us then
             let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
+            logger.Info(sprintf "gp.Opcode = %i" gp.Opcode)
             match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
             | Opcodes.Market -> MarketPacketHandler(gp)
             | Opcodes.TradeLog -> TradeLogPacketHandler(gp)

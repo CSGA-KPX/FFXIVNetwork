@@ -1,4 +1,4 @@
-﻿module Utils
+﻿module internal Utils
 open System
 
 type HexString = 
@@ -13,10 +13,10 @@ type HexString =
         bytes 
         |> Array.map (fun (x : byte) -> System.String.Format("{0:X2}", x))
         |> String.concat System.String.Empty
-(*
+
 let IsBinaryReaderEnd (reader : IO.BinaryReader) = 
     reader.BaseStream.Position = reader.BaseStream.Length
 
 let IsByteArrayAllZero (bytes : byte[]) =
     bytes
-    |> Array.exists (fun x -> x <> 0uy)*)
+    |> Array.exists (fun x -> x <> 0uy)

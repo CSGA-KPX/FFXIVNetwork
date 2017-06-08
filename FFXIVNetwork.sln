@@ -7,7 +7,12 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FFXIVNetwork", "FFXIVNetwor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPHelper", "IPHelper.Net\Src\IPHelper\IPHelper.csproj", "{640B925B-8F4C-4891-84FC-648DA3DB3625}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV", "LibFFXIV\LibFFXIV.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -21,6 +26,10 @@ Global
 		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

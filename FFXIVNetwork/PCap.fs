@@ -1,6 +1,8 @@
 ﻿module PCap
 open System
 open System.Diagnostics
+open LibFFXIV.Constants
+open LibFFXIV.GeneralPacket
 open PcapDotNet.Core
 open PcapDotNet.Packets
 open PcapDotNet.Packets.IpV4
@@ -15,7 +17,7 @@ let isGamePacket(tcp : TcpDatagram) =
     else 
         let payload = tcp.Payload
         let magic   = payload.ToHexadecimalString().[0..31].ToUpper()
-        if magic = Utils.FFXIVBasePacketMagic || (magic <> Utils.FFXIVBasePacketMagicAlt) then
+        if magic = FFXIVBasePacketMagic || (magic <> FFXIVBasePacketMagicAlt) then
             true
         else
             false
@@ -38,10 +40,9 @@ type GamePacketQueueV2() =
 
     member x.Enqueue(tcp : TcpDatagram) =
         let bytes = tcp.Payload.ToMemoryStream().ToArray()
-        let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
+        let res = FFXIVBasePacket.TakePacket(bytes)
         if res.IsSome then
             //当前段已经完整
-            logger.Trace("Direct packet Hit!")
             evt.Trigger(bytes)
         else
             logger.Trace(sprintf "All next seqs:%A" dict.Keys)
@@ -52,7 +53,7 @@ type GamePacketQueueV2() =
                     let merged = Array.append dict.[seq] [|tcp|]
                     let bytes = getBytes merged
                     logger.Trace(Utils.HexString.toHex(bytes))
-                    let res = FFXIV.PacketTypes.FFXIVBasePacket.TakePacket(bytes)
+                    let res = FFXIVBasePacket.TakePacket(bytes)
                     dict.Remove(seq) |> ignore
                     if res.IsSome then
                         logger.Trace("Indirect packet Hit!")
@@ -61,7 +62,7 @@ type GamePacketQueueV2() =
                         logger.Trace(sprintf "Readd %i" tcp.NextSequenceNumber)
                         dict.Add(tcp.NextSequenceNumber, merged))
             else // 没找到，新建一个
-                logger.Trace(sprintf "Add %i" tcp.NextSequenceNumber)
+                logger.Trace(sprintf "New incomplete packet tcp.seq =  %i" tcp.NextSequenceNumber)
                 sLock (fun () -> dict.Add(tcp.NextSequenceNumber, [| tcp |]))
 
 
@@ -77,9 +78,11 @@ let PacketHandler (p:Packet) =
     let (|Income|Outcome|Miss|) (ip : IpV4Datagram) = 
         let remoteAddress = ip.Destination.ToString()
         let  localAddress = ip.Source.ToString()
-        if FFXIV.Connections.GetFFXIVServerIPs = remoteAddress then
+        let serverIP = FFXIV.Connections.ServerIP.Get()
+        assert (serverIP.IsSome)
+        if   serverIP.Value = remoteAddress then
             Outcome
-        elif FFXIV.Connections.GetFFXIVServerIPs = localAddress then
+        elif serverIP.Value = localAddress then
             Income
         else
             Miss
