@@ -1,6 +1,5 @@
 ﻿module PCap
 open System
-open System.Diagnostics
 open LibFFXIV.Constants
 open LibFFXIV.GeneralPacket
 open PcapDotNet.Core
@@ -22,25 +21,68 @@ let isGamePacket(tcp : TcpDatagram) =
         else
             false    
 
+type QueuedPacket =  
+    {   
+        SeqNum  : uint32
+        NextSeq : uint32
+        Data    : byte []
+        //LastSeen  : DateTime
+    }
+
+    member x.IsFirstPacket() = 
+        if x.Data.Length < 0x10 then
+            false
+        else
+            let magic = x.Data.[0 .. 15]
+            Utils.HexString.toHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic
+                
+
+    member x.IsPacketComplete() = 
+        x.IsFirstPacket() && (x.Data.Length >= x.FullPacketSize)
+
+    member x.IsNextPacket(y) = 
+        x.NextSeq = y.SeqNum
+
+    member x.FullPacketSize = 
+        FFXIVBasePacket.GetPacketSize(x.Data)
+
+    override x.ToString() = 
+        sprintf "%i -> %i Fin:%b : %s" x.SeqNum x.NextSeq (x.IsPacketComplete()) (Utils.HexString.toHex(x.Data))
+
+    static member FromTcpDatagram(t : PcapDotNet.Packets.Transport.TcpDatagram) = 
+        {
+            SeqNum   = t.SequenceNumber
+            NextSeq  = t.NextSequenceNumber
+            Data     = t.Payload.ToMemoryStream().ToArray()
+            //LastSeen = DateTime.Now
+        }
+
+    static member (+) (x, y) =
+        {
+            SeqNum   = x.SeqNum
+            NextSeq  = y.NextSeq
+            Data     = Array.append x.Data y.Data
+            //LastSeen = y.LastSeen
+        }
+
 type GamePacketQueueV3() = 
     let locker = new Threading.ReaderWriterLockSlim(Threading.LockRecursionPolicy.SupportsRecursion)
-    let dict   = new System.Collections.Generic.Dictionary<uint32, FFXIV.PacketHandler.QueuedPacket>()
+    let dict   = new System.Collections.Generic.Dictionary<uint32, QueuedPacket>()
     let evt    = new Event<byte []>()
     let logger = NLog.LogManager.GetCurrentClassLogger()
 
     member x.NewPacketEvent = evt.Publish
 
-    member private x.processPacketCompleteness(p : FFXIV.PacketHandler.QueuedPacket, oldKey : uint32 option) = 
+    member private x.processPacketCompleteness(p : QueuedPacket, oldKey : uint32 option) = 
         locker.EnterWriteLock()
-
         if oldKey.IsSome then
             dict.Remove(oldKey.Value) |> ignore
 
         if p.IsPacketComplete() then
-            let rst = FFXIVBasePacket.TakePacket(p.Data)
-            assert (rst.IsSome)
-
-            let (pkt, rst) = rst.Value
+            let (pkt, rst) = 
+                let rst = FFXIVBasePacket.TakePacket(p.Data)
+                assert (rst.IsSome)
+                rst.Value
             evt.Trigger(pkt)
 
             if rst.Length <> 0 then
@@ -49,24 +91,22 @@ type GamePacketQueueV3() =
             dict.Add(p.NextSeq, p)
         locker.ExitWriteLock()
 
-    member private x.processPacketChain(p : FFXIV.PacketHandler.QueuedPacket) = 
+    member private x.processPacketChain(p : QueuedPacket) = 
         locker.EnterUpgradeableReadLock()
-        if dict.ContainsKey(p.SeqNum) then
-            //发包顺序 A -> B 
+        if  dict.ContainsKey(p.SeqNum)   then //发包顺序 A -> B 
             let np = dict.[p.SeqNum] + p
             x.processPacketCompleteness(np, Some(p.SeqNum))
             logger.Trace(sprintf "Forward packet: %s" (np.ToString()))
-        elif dict.ContainsKey(p.NextSeq) then
-            //发包顺序 B -> A
+        elif dict.ContainsKey(p.NextSeq) then  //发包顺序 B -> A
             let np =  p + dict.[p.NextSeq]
             x.processPacketCompleteness(np, Some(p.NextSeq))
             logger.Trace(sprintf "Reverse packet: %s" (np.ToString()))
-        else
+        else //单包完整
             x.processPacketCompleteness(p, None)
         locker.ExitUpgradeableReadLock()
 
     member x.Enqueue(tcp : TcpDatagram) =
-        let p = FFXIV.PacketHandler.QueuedPacket.FromTcpDatagram(tcp)
+        let p = QueuedPacket.FromTcpDatagram(tcp)
         logger.Trace(sprintf "Current dict : %A, current seq:%i next seq : %i \r\n%s" dict.Keys p.SeqNum p.NextSeq (Utils.HexString.toHex(p.Data)))
         if p.IsPacketComplete() then
             evt.Trigger(p.Data)

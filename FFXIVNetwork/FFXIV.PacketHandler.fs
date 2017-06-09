@@ -5,52 +5,6 @@ open LibFFXIV.Constants
 open LibFFXIV.GeneralPacket
 open LibFFXIV.SpecializedPacket
 
-type QueuedPacket =  
-    {   
-        SeqNum  : uint32
-        NextSeq : uint32
-        Data    : byte []
-        //LastSeen  : DateTime
-    }
-
-    member x.IsFirstPacket() = 
-        if x.Data.Length < 0x10 then
-            false
-        else
-            let magic = x.Data.[0 .. 15]
-            Utils.HexString.toHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic
-                
-
-    member x.IsPacketComplete() = 
-        x.IsFirstPacket() && (x.Data.Length >= x.FullPacketSize)
-
-    member x.IsNextPacket(y) = 
-        x.NextSeq = y.SeqNum
-
-    member x.FullPacketSize = 
-        FFXIVBasePacket.GetPacketSize(x.Data)
-
-    override x.ToString() = 
-        sprintf "%i -> %i Fin:%b : %s" x.SeqNum x.NextSeq (x.IsPacketComplete()) (Utils.HexString.toHex(x.Data))
-
-    static member FromTcpDatagram(t : PcapDotNet.Packets.Transport.TcpDatagram) = 
-        {
-            SeqNum   = t.SequenceNumber
-            NextSeq  = t.NextSequenceNumber
-            Data     = t.Payload.ToMemoryStream().ToArray()
-            //LastSeen = DateTime.Now
-        }
-
-    static member (+) (x, y) =
-        {
-            SeqNum   = x.SeqNum
-            NextSeq  = y.NextSeq
-            Data     = Array.append x.Data y.Data
-            //LastSeen = y.LastSeen
-        }
-
-
-
 let MarketPacketHandler (idx : int, gp : FFXIVGamePacket) = 
     let marketDatas = MarketPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====MarketData====")
