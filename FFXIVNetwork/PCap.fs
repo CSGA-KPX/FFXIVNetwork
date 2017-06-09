@@ -23,6 +23,7 @@ let isGamePacket(tcp : TcpDatagram) =
             false
 
 type GamePacketQueueV2() = 
+    let locker = new Threading.ReaderWriterLockSlim(Threading.LockRecursionPolicy.SupportsRecursion)
     let dict = new System.Collections.Generic.Dictionary<uint32, TcpDatagram []>()
     let setLock = ref ()
     let sLock func =
@@ -38,6 +39,26 @@ type GamePacketQueueV2() =
 
     member x.NewPacketEvent = evt.Publish
 
+    member private x.processPacketChain(tcp : TcpDatagram) = 
+        let seq = tcp.SequenceNumber
+        logger.Trace(sprintf "Current dict : %A, current seq:%i" dict.Keys tcp.SequenceNumber)
+        locker.EnterUpgradeableReadLock()
+        if dict.ContainsKey(seq) then
+            let merged = Array.append dict.[seq] [|tcp|]
+            let bytes = getBytes merged
+            logger.Trace("Merged bytes : {0}", Utils.HexString.toHex(bytes))
+            let res = FFXIVBasePacket.TakePacket(bytes)
+            dict.Remove(seq) |> ignore
+            if res.IsSome then
+                logger.Trace("Indirect packet Hit!")
+                evt.Trigger(bytes)
+            else
+                logger.Trace(sprintf "Readd %i" tcp.NextSequenceNumber)
+                dict.Add(tcp.NextSequenceNumber, merged)
+        else
+                logger.Trace(sprintf "New incomplete packet tcp.seq =  %i" tcp.NextSequenceNumber)
+                dict.Add(tcp.NextSequenceNumber, [| tcp |])
+
     member x.Enqueue(tcp : TcpDatagram) =
         let bytes = tcp.Payload.ToMemoryStream().ToArray()
         let res = FFXIVBasePacket.TakePacket(bytes)
@@ -52,7 +73,7 @@ type GamePacketQueueV2() =
                 sLock (fun () ->
                     let merged = Array.append dict.[seq] [|tcp|]
                     let bytes = getBytes merged
-                    logger.Trace(Utils.HexString.toHex(bytes))
+                    logger.Trace("Merged bytes : {0}", Utils.HexString.toHex(bytes))
                     let res = FFXIVBasePacket.TakePacket(bytes)
                     dict.Remove(seq) |> ignore
                     if res.IsSome then

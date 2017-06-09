@@ -38,6 +38,8 @@ type FFXIVGamePacket =
             Data     = data
         }
 
+    static member private logger = NLog.LogManager.GetCurrentClassLogger()
+
 type FFXIVSubPacket = 
     {
         Size : uint32
@@ -71,6 +73,8 @@ type FFXIVSubPacket =
             assert (IsBinaryReaderEnd(r))
         |]
 
+    static member private logger = NLog.LogManager.GetCurrentClassLogger()
+
 
 //00~0F Magic = 5252a041ff5d46e27f2a644d7b99c475
 //10~17 Timestamp
@@ -89,6 +93,8 @@ type FFXIVBasePacket =
         Encoding  : uint16
         SubPackets: FFXIVSubPacket []
     }
+
+    static member private logger = NLog.LogManager.GetCurrentClassLogger()
 
     static member TakePacket(bytes : byte []) = 
         if bytes.Length < 24 then
@@ -123,12 +129,13 @@ type FFXIVBasePacket =
             match encoding with
             | 0us | 1us ->
                 r.ReadBytes(6) |> ignore
-                failwithf "untest method!"
+                FFXIVBasePacket.logger.Error("Untested unenc packet,  payload={0}", HexString.ToHex(bytes))
                 r.ReadBytes(bytes.Length - headerLength - 6)
                 
             | _ ->
                 r.ReadBytes(8) |> ignore
                 r.ReadBytes(bytes.Length - headerLength - 8)
+
         let realPayload = 
             use ms = new MemoryStream(payload)
             use ds = new DeflateStream(ms, CompressionMode.Decompress)
