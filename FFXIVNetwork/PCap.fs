@@ -20,75 +20,61 @@ let isGamePacket(tcp : TcpDatagram) =
         if magic = FFXIVBasePacketMagic || (magic <> FFXIVBasePacketMagicAlt) then
             true
         else
-            false
+            false    
 
-type GamePacketQueueV2() = 
+type GamePacketQueueV3() = 
     let locker = new Threading.ReaderWriterLockSlim(Threading.LockRecursionPolicy.SupportsRecursion)
-    let dict = new System.Collections.Generic.Dictionary<uint32, TcpDatagram []>()
-    let setLock = ref ()
-    let sLock func =
-            lock setLock func
-    let getBytes (ds : TcpDatagram[]) = 
-        ds
-        |> Array.map (fun x -> x.Payload.ToMemoryStream().ToArray())
-        |> Array.reduce (fun acc item -> Array.append acc item) 
-
-    let evt = new Event<byte []>()
-
+    let dict   = new System.Collections.Generic.Dictionary<uint32, FFXIV.PacketHandler.QueuedPacket>()
+    let evt    = new Event<byte []>()
     let logger = NLog.LogManager.GetCurrentClassLogger()
 
     member x.NewPacketEvent = evt.Publish
 
-    member private x.processPacketChain(tcp : TcpDatagram) = 
-        let seq = tcp.SequenceNumber
-        logger.Trace(sprintf "Current dict : %A, current seq:%i" dict.Keys tcp.SequenceNumber)
-        locker.EnterUpgradeableReadLock()
-        if dict.ContainsKey(seq) then
-            let merged = Array.append dict.[seq] [|tcp|]
-            let bytes = getBytes merged
-            logger.Trace("Merged bytes : {0}", Utils.HexString.toHex(bytes))
-            let res = FFXIVBasePacket.TakePacket(bytes)
-            dict.Remove(seq) |> ignore
-            if res.IsSome then
-                logger.Trace("Indirect packet Hit!")
-                evt.Trigger(bytes)
-            else
-                logger.Trace(sprintf "Readd %i" tcp.NextSequenceNumber)
-                dict.Add(tcp.NextSequenceNumber, merged)
+    member private x.processPacketCompleteness(p : FFXIV.PacketHandler.QueuedPacket, oldKey : uint32 option) = 
+        locker.EnterWriteLock()
+
+        if oldKey.IsSome then
+            dict.Remove(oldKey.Value) |> ignore
+
+        if p.IsPacketComplete() then
+            let rst = FFXIVBasePacket.TakePacket(p.Data)
+            assert (rst.IsSome)
+
+            let (pkt, rst) = rst.Value
+            evt.Trigger(pkt)
+
+            if rst.Length <> 0 then
+                dict.Add(p.NextSeq, {p with Data = rst})
         else
-                logger.Trace(sprintf "New incomplete packet tcp.seq =  %i" tcp.NextSequenceNumber)
-                dict.Add(tcp.NextSequenceNumber, [| tcp |])
+            dict.Add(p.NextSeq, p)
+        locker.ExitWriteLock()
+
+    member private x.processPacketChain(p : FFXIV.PacketHandler.QueuedPacket) = 
+        locker.EnterUpgradeableReadLock()
+        if dict.ContainsKey(p.SeqNum) then
+            //发包顺序 A -> B 
+            let np = dict.[p.SeqNum] + p
+            x.processPacketCompleteness(np, Some(p.SeqNum))
+            logger.Trace(sprintf "Forward packet: %s" (np.ToString()))
+        elif dict.ContainsKey(p.NextSeq) then
+            //发包顺序 B -> A
+            let np =  p + dict.[p.NextSeq]
+            x.processPacketCompleteness(np, Some(p.NextSeq))
+            logger.Trace(sprintf "Reverse packet: %s" (np.ToString()))
+        else
+            x.processPacketCompleteness(p, None)
+        locker.ExitUpgradeableReadLock()
 
     member x.Enqueue(tcp : TcpDatagram) =
-        let bytes = tcp.Payload.ToMemoryStream().ToArray()
-        let res = FFXIVBasePacket.TakePacket(bytes)
-        if res.IsSome then
-            //当前段已经完整
-            evt.Trigger(bytes)
+        let p = FFXIV.PacketHandler.QueuedPacket.FromTcpDatagram(tcp)
+        logger.Trace(sprintf "Current dict : %A, current seq:%i next seq : %i \r\n%s" dict.Keys p.SeqNum p.NextSeq (Utils.HexString.toHex(p.Data)))
+        if p.IsPacketComplete() then
+            evt.Trigger(p.Data)
         else
-            logger.Trace(sprintf "All next seqs:%A" dict.Keys)
-            logger.Trace(sprintf "current  seqs:%A" tcp.SequenceNumber)
-            let seq = tcp.SequenceNumber
-            if dict.ContainsKey(seq) then
-                sLock (fun () ->
-                    let merged = Array.append dict.[seq] [|tcp|]
-                    let bytes = getBytes merged
-                    logger.Trace("Merged bytes : {0}", Utils.HexString.toHex(bytes))
-                    let res = FFXIVBasePacket.TakePacket(bytes)
-                    dict.Remove(seq) |> ignore
-                    if res.IsSome then
-                        logger.Trace("Indirect packet Hit!")
-                        evt.Trigger(bytes)
-                    else
-                        logger.Trace(sprintf "Readd %i" tcp.NextSequenceNumber)
-                        dict.Add(tcp.NextSequenceNumber, merged))
-            else // 没找到，新建一个
-                logger.Trace(sprintf "New incomplete packet tcp.seq =  %i" tcp.NextSequenceNumber)
-                sLock (fun () -> dict.Add(tcp.NextSequenceNumber, [| tcp |]))
-
+            x.processPacketChain(p)
 
 let queue = 
-    let q = new GamePacketQueueV2()
+    let q = new GamePacketQueueV3()
     q.NewPacketEvent.Add(FFXIV.PacketHandler.PacketHandler)
     q
 
@@ -108,17 +94,9 @@ let PacketHandler (p:Packet) =
         else
             Miss
 
-    let time = p.Timestamp.ToString("yyyy-MM-dd hh:mm:ss.fff")
-    let length = p.Length
-    let ipInfo = sprintf "IP:length %i/%i F:%i" ip.Length ip.TotalLength ip.Fragmentation.Offset
-    let tcpInfo = sprintf "TCP: port: %i->%i seq: %i len: %i/%i" (tcp.SourcePort) (tcp.DestinationPort) tcp.SequenceNumber tcp.PayloadLength tcp.Length
     
     match ip with
     | Income when isGamePacket(ip.Tcp) -> 
-        let sb = new Text.StringBuilder()
-        sb.AppendLine(sprintf "%s %s %s " time ipInfo tcpInfo)
-          .AppendLine(sprintf "%s" (tcp.Payload.ToHexadecimalString())) |> ignore
-        NLog.LogManager.GetCurrentClassLogger().Trace(sb.ToString())
         queue.Enqueue(tcp)
 
     | Income -> ()

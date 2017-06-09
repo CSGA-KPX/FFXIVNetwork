@@ -108,7 +108,21 @@ type FFXIVBasePacket =
                 let p = bytes.[0 .. size - 1]
                 let r = bytes.[size .. ]
                 Some((p, r))
+
+    static member GetPacketSize(bytes : byte[]) = 
+        if not (bytes.Length >= 0x1B) then
+            failwith "Packet too short"
+
+        use ms = new MemoryStream(bytes)
+        use r = new BinaryReader(ms)
         
+        let magic = r.ReadBytes(16)
+        if not (HexString.ToHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic) then
+            failwith "Magic not match"
+        let time = 
+            TimeStamp.FromMilliseconds(r.ReadUInt64())
+
+        r.ReadUInt16() |> int32
 
     static member ParseFromBytes(bytes : byte[]) = 
         use ms = new MemoryStream(bytes)
