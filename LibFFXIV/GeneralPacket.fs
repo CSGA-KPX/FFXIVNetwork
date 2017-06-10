@@ -22,7 +22,8 @@ type FFXIVGamePacket =
         use ms = new MemoryStream(bytes)
         use r  = new BinaryReader(ms)
         let magic = r.ReadUInt16()
-        assert (magic = 0x0014us)
+        //似乎如果游戏已经登陆，那么magic是0x0014
+        //assert (magic = 0x0014us)
         let opcode = r.ReadUInt16()
         let unk1 = r.ReadUInt32()
         let ts   = TimeStamp.FromSeconds(r.ReadUInt32())
@@ -129,7 +130,12 @@ type FFXIVBasePacket =
         use r = new BinaryReader(ms)
         
         let magic = r.ReadBytes(16)
-        assert (HexString.ToHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic)
+        let magicStr = magic |> HexString.ToHex
+        let isNormalMagic = magicStr = LibFFXIV.Constants.FFXIVBasePacketMagic
+        let isAltMagic    = magicStr = LibFFXIV.Constants.FFXIVBasePacketMagicAlt
+        if not (isNormalMagic || isAltMagic) then
+            failwithf "Packet magic mismatch! %s : %s" magicStr (HexString.ToHex(bytes))
+
         let time = 
             TimeStamp.FromMilliseconds(r.ReadUInt64())
 
@@ -143,23 +149,24 @@ type FFXIVBasePacket =
             match encoding with
             | 0us | 1us ->
                 r.ReadBytes(6) |> ignore
-                FFXIVBasePacket.logger.Error("Untested unenc packet,  payload={0}", HexString.ToHex(bytes))
                 r.ReadBytes(bytes.Length - headerLength - 6)
-                
             | _ ->
                 r.ReadBytes(8) |> ignore
-                r.ReadBytes(bytes.Length - headerLength - 8)
+                let encoded = r.ReadBytes(bytes.Length - headerLength - 8)
+                use ms = new MemoryStream(encoded)
+                use ds = new DeflateStream(ms, CompressionMode.Decompress)
+                let buf = Array.zeroCreate 0x10000
+                let messageLength = ds.Read(buf, 0, buf.Length)
+                if messageLength = 0 then
+                    [| |]
+                else
+                    buf.[ 0 .. messageLength - 1]
 
-        let realPayload = 
-            use ms = new MemoryStream(payload)
-            use ds = new DeflateStream(ms, CompressionMode.Decompress)
-            let buf = Array.zeroCreate 0x10000
-            let messageLength = ds.Read(buf, 0, buf.Length)
-            if messageLength = 0 then
-                failwithf ""
-            buf.[ 0 .. messageLength - 1]
-        
-        let subPackets = FFXIVSubPacket.Parse(realPayload) 
+        let subPackets = 
+            if payload.Length >= 0x10 then
+                FFXIVSubPacket.Parse(payload) 
+            else
+                [| |]
 
         assert (IsBinaryReaderEnd(r))
         

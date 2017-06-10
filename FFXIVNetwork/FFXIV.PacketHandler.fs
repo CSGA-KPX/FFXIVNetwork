@@ -34,7 +34,7 @@ let UnknownPacketHandler (idx, total, gp : FFXIVGamePacket) =
     let opcode = Utils.HexString.toHex (BitConverter.GetBytes(gp.Opcode))
     let ts     = gp.TimeStamp
     let data   = Utils.HexString.toHex (gp.Data)
-    NLog.LogManager.GetCurrentClassLogger().Trace("UnknownGamePacket: Opcode:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx, total , data)
+    NLog.LogManager.GetCurrentClassLogger().Trace("UnknownGamePacket: MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx, total, data, gp.Magic)
     
 let logger = NLog.LogManager.GetCurrentClassLogger()
 

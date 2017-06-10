@@ -7,20 +7,6 @@ open PcapDotNet.Packets
 open PcapDotNet.Packets.IpV4
 open PcapDotNet.Packets.Transport
 
-//    Payload len = 0
-// or Start with 0x00 *  24
-let isGamePacket(tcp : TcpDatagram) =
-    let len = tcp.Payload.Length
-    if len = 0 then
-        false
-    else 
-        let payload = tcp.Payload
-        let magic   = payload.ToHexadecimalString().[0..31].ToUpper()
-        if magic = FFXIVBasePacketMagic || (magic <> FFXIVBasePacketMagicAlt) then
-            true
-        else
-            false    
-
 type QueuedPacket =  
     {   
         SeqNum  : uint32
@@ -38,12 +24,12 @@ type QueuedPacket =
                 
 
     member x.IsPacketComplete() = 
-        x.IsFirstPacket() && (x.Data.Length >= x.FullPacketSize)
+        x.IsFirstPacket() && (x.Data.Length >= x.FullPacketSize())
 
     member x.IsNextPacket(y) = 
         x.NextSeq = y.SeqNum
 
-    member x.FullPacketSize = 
+    member x.FullPacketSize() = 
         FFXIVBasePacket.GetPacketSize(x.Data)
 
     override x.ToString() = 
@@ -65,58 +51,88 @@ type QueuedPacket =
             //LastSeen = y.LastSeen
         }
 
+
 type GamePacketQueueV3() = 
-    let locker = new Threading.ReaderWriterLockSlim(Threading.LockRecursionPolicy.SupportsRecursion)
+    let testtt = ""
+    let oldlck func = lock testtt func
     let dict   = new System.Collections.Generic.Dictionary<uint32, QueuedPacket>()
     let evt    = new Event<byte []>()
     let logger = NLog.LogManager.GetCurrentClassLogger()
 
     member x.NewPacketEvent = evt.Publish
 
-    member private x.processPacketCompleteness(p : QueuedPacket, oldKey : uint32 option) = 
-        locker.EnterWriteLock()
-        if oldKey.IsSome then
-            dict.Remove(oldKey.Value) |> ignore
+    member x.GetQueuedItemCount() = dict.Count
 
+    member private x.processPacketCompleteness(p : QueuedPacket) = 
         if p.IsPacketComplete() then
-            let (pkt, rst) = 
-                let rst = FFXIVBasePacket.TakePacket(p.Data)
-                assert (rst.IsSome)
-                rst.Value
-            evt.Trigger(pkt)
-
+            let rec yieldPacket (rest) = 
+                let rst = FFXIVBasePacket.TakePacket(rest)
+                if rst.IsNone then
+                    rest
+                else
+                    let (p, rst) = rst.Value
+                    evt.Trigger(p)
+                    yieldPacket(rst)
+            let rst = yieldPacket(p.Data)
             if rst.Length <> 0 then
+                logger.Trace(sprintf "Rst<>0, Added nsq:%i data:%s" (p.NextSeq) (Utils.HexString.toHex(rst)))
                 dict.Add(p.NextSeq, {p with Data = rst})
         else
+            logger.Trace(sprintf "NewPkt, Added nsq:%i" (p.NextSeq))
             dict.Add(p.NextSeq, p)
-        locker.ExitWriteLock()
 
     member private x.processPacketChain(p : QueuedPacket) = 
-        locker.EnterUpgradeableReadLock()
-        if  dict.ContainsKey(p.SeqNum)   then //发包顺序 A -> B 
-            let np = dict.[p.SeqNum] + p
-            x.processPacketCompleteness(np, Some(p.SeqNum))
-            logger.Trace(sprintf "Forward packet: %s" (np.ToString()))
-        elif dict.ContainsKey(p.NextSeq) then  //发包顺序 B -> A
-            let np =  p + dict.[p.NextSeq]
-            x.processPacketCompleteness(np, Some(p.NextSeq))
-            logger.Trace(sprintf "Reverse packet: %s" (np.ToString()))
-        else //单包完整
-            x.processPacketCompleteness(p, None)
-        locker.ExitUpgradeableReadLock()
+        let FwdSearch = dict.ContainsKey(p.SeqNum)
+        let RevSearch = 
+            dict
+            |> Seq.filter (fun x -> 
+                x.Value.SeqNum = p.NextSeq)
+            |> Seq.tryHead
 
-    member x.Enqueue(tcp : TcpDatagram) =
-        let p = QueuedPacket.FromTcpDatagram(tcp)
+        match FwdSearch, RevSearch.IsSome with
+        | true, true   ->
+            let np = dict.[p.SeqNum] + p + RevSearch.Value.Value
+            dict.Remove(p.SeqNum) |> ignore
+            dict.Remove(RevSearch.Value.Key) |> ignore
+            x.processPacketChain(np)
+        | true, false  -> 
+            let np = dict.[p.SeqNum] + p
+            dict.Remove(p.SeqNum) |> ignore
+            logger.Trace(sprintf "Forward packet: %s" (np.ToString()))
+            x.processPacketChain(np)
+        | false, true  -> 
+            let np =  p + RevSearch.Value.Value
+            dict.Remove(RevSearch.Value.Key) |> ignore
+            logger.Trace(sprintf "Reverse packet: %s" (np.ToString()))
+            x.processPacketChain(np)
+        | false, false -> 
+            x.processPacketCompleteness(p)
+
+    member x.Enqueue(p : QueuedPacket) =
         logger.Trace(sprintf "Current dict : %A, current seq:%i next seq : %i \r\n%s" dict.Keys p.SeqNum p.NextSeq (Utils.HexString.toHex(p.Data)))
-        if p.IsPacketComplete() then
-            evt.Trigger(p.Data)
-        else
-            x.processPacketChain(p)
+        oldlck (fun () -> x.processPacketChain(p))
 
 let queue = 
     let q = new GamePacketQueueV3()
     q.NewPacketEvent.Add(FFXIV.PacketHandler.PacketHandler)
     q
+
+
+//    Payload len = 0
+// or Start with 0x00 *  24
+let isGamePacket(tcp : TcpDatagram) =
+    let len = tcp.Payload.Length
+    if len = 0 then
+        false
+    else 
+        let payload = tcp.Payload
+        let len     = payload.Length
+        if (len <= 32) || (payload.ToHexadecimalString().[0..31].ToUpper() <> FFXIVBasePacketMagicAlt) then
+            true
+        else
+            false  
+
+let RawPacketLogger = NLog.LogManager.GetLogger("RawTCPPacket")
 
 let PacketHandler (p:Packet) = 
     let ip = p.Ethernet.IpV4
@@ -125,7 +141,7 @@ let PacketHandler (p:Packet) =
     let (|Income|Outcome|Miss|) (ip : IpV4Datagram) = 
         let remoteAddress = ip.Destination.ToString()
         let  localAddress = ip.Source.ToString()
-        let serverIP = FFXIV.Connections.ServerIP.Get()
+        let serverIP      = FFXIV.Connections.ServerIP.Get()
         assert (serverIP.IsSome)
         if   serverIP.Value = remoteAddress then
             Outcome
@@ -137,8 +153,9 @@ let PacketHandler (p:Packet) =
     
     match ip with
     | Income when isGamePacket(ip.Tcp) -> 
-        queue.Enqueue(tcp)
-
+        RawPacketLogger.Trace(sprintf "<<<<<<%i,%i,%s" (tcp.SequenceNumber) (tcp.NextSequenceNumber) (tcp.Payload.ToMemoryStream().ToArray() |> Utils.HexString.toHex))
+        queue.Enqueue(QueuedPacket.FromTcpDatagram(tcp))
+        
     | Income -> ()
     | Outcome -> () //printfn "%s %i -> %i %i " time (tcp.SourcePort) (tcp.DestinationPort) length
     | Miss -> ()
