@@ -142,10 +142,9 @@ let PacketHandler (p:Packet) =
         let remoteAddress = ip.Destination.ToString()
         let  localAddress = ip.Source.ToString()
         let serverIP      = FFXIV.Connections.ServerIP.Get()
-        assert (serverIP.IsSome)
-        if   serverIP.Value = remoteAddress then
+        if   serverIP.IsSome && serverIP.Value = remoteAddress then
             Outcome
-        elif serverIP.Value = localAddress then
+        elif serverIP.IsSome && serverIP.Value = localAddress then
             Income
         else
             Miss
@@ -162,18 +161,21 @@ let PacketHandler (p:Packet) =
     ()
 
 let Start() = 
-    let allDevices = LivePacketDevice.AllLocalMachine
-    allDevices
-    |> Seq.iteri (fun i x -> 
-        printfn "%i %s %A" i x.Name (x.Addresses.[0].Address)
-    )
+    let device = 
+        LivePacketDevice.AllLocalMachine
+        |> Seq.filter (fun x ->
+            x.Addresses.[0].Address.Family = SocketAddressFamily.Internet)
+        |> Seq.mapi (fun i x -> 
+            printfn "%i %s %A" i x.Name (x.Addresses.[0].Address);x)
+        |> Seq.tryHead
 
-    let selectedDevice = allDevices.[0]
-    
-    using (selectedDevice.Open(65536, PacketDeviceOpenAttributes.Promiscuous, 1000)) (fun communicator ->
-        if communicator.DataLink.Kind <> DataLinkKind.Ethernet then
-            failwithf "This program works only on Ethernet networks."
-        using (communicator.CreateFilter("ip and tcp")) (fun filter -> communicator.SetFilter(filter))
-        communicator.ReceivePackets(0, new HandlePacket (PacketHandler)) |> ignore
-    )
+    if device.IsSome then
+        using (device.Value.Open(65536, PacketDeviceOpenAttributes.Promiscuous, 1000)) (fun communicator ->
+            if communicator.DataLink.Kind <> DataLinkKind.Ethernet then
+                failwithf "This program works only on Ethernet networks."
+            using (communicator.CreateFilter("ip and tcp")) (fun filter -> communicator.SetFilter(filter))
+            communicator.ReceivePackets(0, new HandlePacket (PacketHandler)) |> ignore
+        )
+    else
+        failwith "检测不到适合的适配器"
     
