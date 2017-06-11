@@ -21,7 +21,7 @@ let PacketTester() =
         {
             SeqNum  = seq
             NextSeq = nsq
-            Data    = Utils.HexString.toBytes(dat)
+            Data    = Utils.HexString.ToBytes(dat)
         })
     |> Array.iter (fun x -> queue.Enqueue(x))
     printfn "Queued count : %i" (queue.GetQueuedItemCount())
@@ -29,8 +29,9 @@ let PacketTester() =
 
 [<EntryPoint>]
 let main argv = 
+    //M()
     PacketTester()
-    Console.ReadLine() |> ignore
+    //Console.ReadLine() |> ignore
 
     0 // 返回整数退出代码
     

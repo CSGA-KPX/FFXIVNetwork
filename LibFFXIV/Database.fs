@@ -1,4 +1,5 @@
-﻿module Database
+﻿module LibFFXIV.Database
+
 open System
 open System.Collections.Generic
 open FSharp.Data

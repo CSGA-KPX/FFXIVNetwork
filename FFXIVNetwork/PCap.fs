@@ -12,15 +12,18 @@ type QueuedPacket =
         SeqNum  : uint32
         NextSeq : uint32
         Data    : byte []
-        //LastSeen  : DateTime
     }
+
+    member x.IsExpired() = 
+        ()
+        
 
     member x.IsFirstPacket() = 
         if x.Data.Length < 0x10 then
             false
         else
             let magic = x.Data.[0 .. 15]
-            Utils.HexString.toHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic
+            Utils.HexString.ToHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic
                 
 
     member x.IsPacketComplete() = 
@@ -33,14 +36,13 @@ type QueuedPacket =
         FFXIVBasePacket.GetPacketSize(x.Data)
 
     override x.ToString() = 
-        sprintf "%i -> %i Fin:%b : %s" x.SeqNum x.NextSeq (x.IsPacketComplete()) (Utils.HexString.toHex(x.Data))
+        sprintf "%i -> %i Fin:%b : %s" x.SeqNum x.NextSeq (x.IsPacketComplete()) (Utils.HexString.ToHex(x.Data))
 
     static member FromTcpDatagram(t : PcapDotNet.Packets.Transport.TcpDatagram) = 
         {
             SeqNum   = t.SequenceNumber
             NextSeq  = t.NextSequenceNumber
             Data     = t.Payload.ToMemoryStream().ToArray()
-            //LastSeen = DateTime.Now
         }
 
     static member (+) (x, y) =
@@ -48,7 +50,6 @@ type QueuedPacket =
             SeqNum   = x.SeqNum
             NextSeq  = y.NextSeq
             Data     = Array.append x.Data y.Data
-            //LastSeen = y.LastSeen
         }
 
 
@@ -75,7 +76,7 @@ type GamePacketQueueV3() =
                     yieldPacket(rst)
             let rst = yieldPacket(p.Data)
             if rst.Length <> 0 then
-                logger.Trace(sprintf "Rst<>0, Added nsq:%i data:%s" (p.NextSeq) (Utils.HexString.toHex(rst)))
+                logger.Trace(sprintf "Rst<>0, Added nsq:%i data:%s" (p.NextSeq) (Utils.HexString.ToHex(rst)))
                 dict.Add(p.NextSeq, {p with Data = rst})
         else
             logger.Trace(sprintf "NewPkt, Added nsq:%i" (p.NextSeq))
@@ -109,8 +110,20 @@ type GamePacketQueueV3() =
             x.processPacketCompleteness(p)
 
     member x.Enqueue(p : QueuedPacket) =
-        logger.Trace(sprintf "Current dict : %A, current seq:%i next seq : %i \r\n%s" dict.Keys p.SeqNum p.NextSeq (Utils.HexString.toHex(p.Data)))
-        oldlck (fun () -> x.processPacketChain(p))
+        logger.Trace(sprintf "Current dict : %A, current seq:%i next seq : %i \r\n%s" dict.Keys p.SeqNum p.NextSeq (Utils.HexString.ToHex(p.Data)))
+        oldlck (fun () -> 
+            x.processPacketChain(p)
+            if dict.Count >= GamePacketQueueV3.zombieCheckLimit then
+                for key in dict.Keys do
+                    if (p.SeqNum - key) > GamePacketQueueV3.zombieTimedOut then 
+                        logger.Info("Removed zombie packets key={0}", key)
+                        dict.Remove(key) |> ignore
+            )
+
+    ///dict数量超过多少以后开始清理僵尸
+    static member private zombieCheckLimit = 10
+    ///SeqNum超过多少以后视为过期
+    static member private zombieTimedOut = 4u*1024u
 
 let queue = 
     let q = new GamePacketQueueV3()
@@ -152,7 +165,7 @@ let PacketHandler (p:Packet) =
     
     match ip with
     | Income when isGamePacket(ip.Tcp) -> 
-        RawPacketLogger.Trace(sprintf "<<<<<<%i,%i,%s" (tcp.SequenceNumber) (tcp.NextSequenceNumber) (tcp.Payload.ToMemoryStream().ToArray() |> Utils.HexString.toHex))
+        RawPacketLogger.Trace(sprintf "<<<<<<%i,%i,%s" (tcp.SequenceNumber) (tcp.NextSequenceNumber) (tcp.Payload.ToMemoryStream().ToArray() |> Utils.HexString.ToHex))
         queue.Enqueue(QueuedPacket.FromTcpDatagram(tcp))
         
     | Income -> ()

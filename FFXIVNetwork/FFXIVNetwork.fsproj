@@ -56,7 +56,6 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Utils.fs" />
-    <Compile Include="Database.fs" />
     <Compile Include="FFXIV.Connections.fs" />
     <Compile Include="FFXIV.PacketHandler.fs" />
     <Compile Include="PCap.fs" />
@@ -75,9 +74,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Data">
-      <HintPath>..\packages\FSharp.Data.2.3.3\lib\net40\FSharp.Data.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
       <Name>FSharp.Core</Name>

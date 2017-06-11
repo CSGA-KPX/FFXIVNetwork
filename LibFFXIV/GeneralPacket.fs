@@ -79,8 +79,8 @@ type FFXIVSubPacket =
 
 //00~0F Magic = 5252a041ff5d46e27f2a644d7b99c475
 //10~17 Timestamp
-//18~1B PacketSize (Including Magic)
-//1C~1D Unknown //00 00
+//18~19 PacketSize (Including Magic)
+//1A~1D Unknown //00 00 00 00
 //1E~1F MessageChunks
 //20~21 Encoding 01 01
 //22~27 unknown
@@ -98,32 +98,26 @@ type FFXIVBasePacket =
     static member private logger = NLog.LogManager.GetCurrentClassLogger()
 
     static member TakePacket(bytes : byte []) = 
-        if bytes.Length < 24 then
-            None
-        else
-            let size = BitConverter.ToUInt16(bytes, 24) |> int
-
-            if size = 0 || size > 0x10000 || (size > bytes.Length) then
+        try
+            let size = FFXIVBasePacket.GetPacketSize(bytes)
+            if  size = 0 || (size > bytes.Length) then
                 None
             else
                 let p = bytes.[0 .. size - 1]
                 let r = bytes.[size .. ]
                 Some((p, r))
+        with
+            | e ->
+                None
 
     static member GetPacketSize(bytes : byte[]) = 
-        if not (bytes.Length >= 0x1B) then
+        if bytes.Length < 0x1A then 
             failwith "Packet too short"
-
-        use ms = new MemoryStream(bytes)
-        use r = new BinaryReader(ms)
-        
-        let magic = r.ReadBytes(16)
-        if not (HexString.ToHex(magic) = LibFFXIV.Constants.FFXIVBasePacketMagic) then
-            failwith "Magic not match"
-        let time = 
-            TimeStamp.FromMilliseconds(r.ReadUInt64())
-
-        r.ReadUInt16() |> int32
+        let size = BitConverter.ToUInt16(bytes, 0x18) |> int
+        if size > 0x10000 then
+            FFXIVBasePacket.logger.Error(sprintf "Packet size too large(%i). " size)
+            failwithf "Packet size too large(%i). " size
+        size
 
     static member ParseFromBytes(bytes : byte[]) = 
         use ms = new MemoryStream(bytes)
