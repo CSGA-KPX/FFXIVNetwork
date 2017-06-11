@@ -1,6 +1,8 @@
 ﻿module LibFFXIV.Utils
 open System
 
+type bytes = byte []
+
 type HexString = 
     //This is rarely used. No need for faster method
     static member ToBytes (s : string) = 
@@ -70,11 +72,14 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         let bytes = x.ReadBytes(len)
         Text.Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])
 
-    member x.PeekHexString(len : int) = 
+    member x.PeekBytes(len : int) = 
         let origPos = x.BaseStream.Position
-        let hex     = HexString.ToHex(x.ReadBytes(len))
+        let bytes   = x.ReadBytes(len)
         x.BaseStream.Position <- origPos
-        hex
+        bytes
+
+    member x.ReadHexString(len : int) = 
+        HexString.ToHex(x.ReadBytes(len))
 
     member x.ReadRestBytes() = 
         let bs = x.BaseStream
