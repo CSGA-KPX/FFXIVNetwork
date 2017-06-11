@@ -9,7 +9,7 @@ let M () =
     PCap.Start()
 
 let PacketTester() = 
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\新建文件夹\RawTCPPacket.txt"
+    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\看市场，水晶页\LoggingRawTCPPacket.txt"
     let lines    = IO.File.ReadAllLines(testFile)
     lines
     |> Array.map (fun x -> x.[50 ..])
@@ -31,7 +31,7 @@ let PacketTester() =
 let main argv = 
     //M()
     PacketTester()
-    //Console.ReadLine() |> ignore
+    Console.ReadLine() |> ignore
 
     0 // 返回整数退出代码
     

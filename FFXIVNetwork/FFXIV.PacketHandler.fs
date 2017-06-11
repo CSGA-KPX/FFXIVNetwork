@@ -7,9 +7,10 @@ open LibFFXIV.SpecializedPacket
 open LibFFXIV.Database
 
 let MarketPacketHandler (idx : int, gp : FFXIVGamePacket) = 
-    let marketDatas = MarketPacket.ParseFromBytes(gp.Data)
-    let sb = (new StringBuilder()).AppendLine("====MarketData====")
-    for data in marketDatas do
+    let marketData = MarketPacket.ParseFromBytes(gp.Data)
+    let sb = (new StringBuilder()).AppendFormat("====MarketData{0}/{1}====\r\n", marketData.CurrIdx, marketData.PrevIdx)
+    
+    for data in marketData.Records do
         let price = data.Price
         let count = data.Count
         let item  = XIVItemDict.[data.Itemid |> int].ToString()

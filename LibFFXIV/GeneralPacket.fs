@@ -63,8 +63,7 @@ type FFXIVSubPacket =
                         Unknown  = r.ReadUInt16()
                         Data     = r.ReadRestBytes() }
 
-            if not (r.IsEnd()) then
-                FFXIVSubPacket.logger.Error(sprintf "Binaryreader not end, packet=%s" (HexString.ToHex(bytes)))
+            assert (r.IsEnd())
         |]
 
 
@@ -144,9 +143,8 @@ type FFXIVBasePacket =
             else
                 [| |]
 
-        if not (r.IsEnd()) then
-            FFXIVBasePacket.logger.Error(sprintf "Binaryreader not end, packet=%s" (HexString.ToHex(bytes)))
-        
+        assert (r.IsEnd())
+
         {
             Magic     = magicHex
             Timestamp = time

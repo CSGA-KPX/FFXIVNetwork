@@ -8,6 +8,7 @@ open LibFFXIV.Constants
 open LibFFXIV.Utils
 
 
+
 type TradeLogRecord = 
     {
         ItemID      : uint32
@@ -62,7 +63,7 @@ type TradeLogPacket =
             Records = records
         }
 
-type MarketPacket = 
+type MarketRecord = 
     {
         Unknown1 : byte [] //32 byte unknown
         Price    : uint32
@@ -79,30 +80,52 @@ type MarketPacket =
     }
 
     static member ParseFromBytes(bytes : byte[]) = 
-        [|
-            let recordSize = 112
-            let chunks = 
-                bytes 
-                |> Array.chunkBySize recordSize
-                |> Array.filter (fun x -> x.Length = recordSize)
-                |> Array.filter (fun x -> IsByteArrayAllZero(x))
-            for chunk in chunks do
-                use ms = new MemoryStream(chunk)
-                use r  = new BinaryReader(ms)
-                yield {
-                    Unknown1  = r.ReadBytes(32)
-                    Price     = r.ReadUInt32()
-                    Unknown2  = r.ReadUInt32()
-                    Count     = r.ReadUInt32()
-                    Itemid    = r.ReadUInt32()
-                    TimeStamp = r.ReadUInt32()
-                    Unknown3  = r.ReadBytes(24)
-                    Name      =
-                                let bytes = r.ReadBytes(32)
-                                Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])
-                    IsHQ      = r.ReadByte() = 1uy
-                    MeldCount = r.ReadByte()
-                    Market    = r.ReadByte()
-                    Unknown4  = r.ReadByte()
-                }
-        |]
+        use r  = XIVBinaryReader.FromBytes(bytes)
+        {
+            Unknown1  = r.ReadBytes(32)
+            Price     = r.ReadUInt32()
+            Unknown2  = r.ReadUInt32()
+            Count     = r.ReadUInt32()
+            Itemid    = r.ReadUInt32()
+            TimeStamp = r.ReadUInt32()
+            Unknown3  = r.ReadBytes(24)
+            Name      = r.ReadFixedUTF8(32)
+            IsHQ      = r.ReadByte() = 1uy
+            MeldCount = r.ReadByte()
+            Market    = r.ReadByte()
+            Unknown4  = r.ReadByte()
+        }
+
+type MarketPacket =
+    {
+        Records : MarketRecord []
+        CurrIdx : byte
+        PrevIdx : byte
+        Unknown : bytes // 6bytes
+    }
+
+    static member private logger = NLog.LogManager.GetCurrentClassLogger()
+
+    static member private recordSize = 112
+
+    static member ParseFromBytes(bytes : byte[]) = 
+        use r = XIVBinaryReader.FromBytes(bytes)
+        let (chks, rst) = r.ReadRestBytesAsChunk(MarketPacket.recordSize, true)
+
+        if rst.IsNone then
+            let errormsg = sprintf "Must have tail bytes!"
+            MarketPacket.logger.Error(errormsg)
+            failwithf "%s" errormsg
+
+        let records = 
+            [|
+                for chk in chks do
+                    yield MarketRecord.ParseFromBytes(chk)
+            |]
+        
+        {
+            Records = records
+            CurrIdx = rst.Value.[0]
+            PrevIdx = rst.Value.[1]
+            Unknown = rst.Value.[2..]
+        }

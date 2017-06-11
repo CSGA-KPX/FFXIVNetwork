@@ -38,10 +38,6 @@ type HexString =
             sb.Append(hexTable.[(int)b]) |> ignore
         sb.ToString()
 
-
-let internal IsBinaryReaderEnd (reader : IO.BinaryReader) = 
-    reader.BaseStream.Position = reader.BaseStream.Length
-
 let internal IsByteArrayAllZero (bytes : byte[]) =
     bytes
     |> Array.exists (fun x -> x <> 0uy)
@@ -93,7 +89,7 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         TimeStamp.FromMilliseconds(x.ReadUInt64())
 
     member x.ReadRestBytesAsChunk(size : int, ?filterZeroChunks : bool) = 
-        let needFilter = defaultArg filterZeroChunks true
+        let needFilter = defaultArg filterZeroChunks false
         let (chunks, tail) = 
             x.ReadRestBytes()
             |> Array.chunkBySize size
@@ -110,3 +106,76 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
     static member FromBytes (bytes : byte []) =
         let ms = new IO.MemoryStream(bytes)
         new XIVBinaryReader(ms)
+
+[<AbstractClassAttribute>]
+type GeneralQueueItem<'TSeq, 'TInData>(cur : 'TSeq, next : 'TSeq, data:'TInData) = 
+    
+    member x.Current with get () = cur
+    member x.Next    with get () = next
+    member x.Data    with get () = data
+
+    abstract IsCompleted : unit  -> bool
+    abstract IsFirst     : unit  -> bool
+    abstract IsExpired   : 'TSeq -> bool
+    abstract Append      : 'TInData  -> 'TInData
+
+[<AbstractClassAttribute>]
+type GeneralPacketReassemblyQueue<'TSeq, 'TInData, 'TOutData 
+                                    when 'TSeq : equality
+                                    and 'TInData :> GeneralQueueItem<'TSeq, 'TInData>>() = 
+    let testtt = ""
+    let oldlck func = lock testtt func
+    let dict   = new System.Collections.Generic.Dictionary<'TSeq, 'TInData>()
+    let evt    = new Event<'TOutData>()
+    let logger = NLog.LogManager.GetCurrentClassLogger()
+
+    member x.NewCompleteDataEvent = evt.Publish
+
+    member x.GetQueuedItemCount() = dict.Count
+
+    abstract processPacketCompleteness : 'TInData -> unit
+
+    member private x.processPacketChain(p : 'TInData) =
+        let FwdSearch = dict.ContainsKey(p.Current)
+        let RevSearch = 
+            dict
+            |> Seq.filter (fun x -> 
+                x.Value.Current = p.Next)
+            |> Seq.tryHead
+
+        match FwdSearch, RevSearch.IsSome with
+        | true, true   ->
+            let p1 = dict.[p.Current]
+            let p2 = p
+            let p3 = RevSearch.Value.Value
+            let np = p1.Append(p2).Append(p3)
+            dict.Remove(p.Current) |> ignore
+            dict.Remove(RevSearch.Value.Key) |> ignore
+            x.processPacketChain(np)
+        | true, false  -> 
+            let np = dict.[p.Current].Append(p)
+            dict.Remove(p.Current) |> ignore
+            x.processPacketChain(np)
+        | false, true  -> 
+            let np =  p.Append(RevSearch.Value.Value)
+            dict.Remove(RevSearch.Value.Key) |> ignore
+            x.processPacketChain(np)
+        | false, false -> 
+            x.processPacketCompleteness(p)
+
+    member x.Enqueue(p : 'TInData) =
+        oldlck (fun () -> 
+            x.processPacketChain(p)
+            if dict.Count >= GeneralPacketReassemblyQueue<_,_,_>.zombieCheckLimit then
+                for value in dict.Values do
+                    let key = value.Next
+                    if value.IsExpired(p.Current) then 
+                        logger.Info("Removed zombie packets key={0}", key)
+                        dict.Remove(key) |> ignore
+            )
+
+
+    ///dict数量超过多少以后开始清理僵尸
+    static member private zombieCheckLimit = 10
+    ///SeqNum超过多少以后视为过期
+    static member private zombieTimedOut = 4u*1024u
