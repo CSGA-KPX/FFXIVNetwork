@@ -1,4 +1,4 @@
-﻿namespace LibFFXIV.SpecializedPacket
+﻿module LibFFXIV.SpecializedPacket
 open Microsoft.FSharp.Core.Operators.Checked
 open System
 open System.IO
@@ -98,8 +98,8 @@ type MarketRecord =
 type MarketPacket =
     {
         Records : MarketRecord []
+        NextIdx : byte
         CurrIdx : byte
-        PrevIdx : byte
         Unknown : bytes // 6bytes
     }
 
@@ -124,18 +124,50 @@ type MarketPacket =
         
         {
             Records = records
-            CurrIdx = rst.Value.[0]
-            PrevIdx = rst.Value.[1]
+            NextIdx = rst.Value.[0]
+            CurrIdx = rst.Value.[1]
             Unknown = rst.Value.[2..]
         }
-
+(*
 type MarketQueueItem(packet : MarketPacket) = 
-    inherit GeneralQueueItem<byte, MarketRecord[]>(packet.PrevIdx, packet.CurrIdx, packet.Records)
+    inherit GeneralQueueItem<byte, MarketPacket>(packet.CurrIdx, packet.NextIdx, packet)
 
     override x.IsFirst() = 
-        //TODO:
-        x.Current = 0uy
+        //loop list, always true
+        true
 
-    override x.IsCompleted() = false
+    override x.IsCompleted() = 
+        x.Current = x.Next
     
     override x.IsExpired(ref)  = false
+
+let tester (ra : MarketRecord []) = 
+    printfn "Ra.Length : %i" ra.Length
+
+type MarketQueue private () = 
+    inherit GeneralPacketReassemblyQueue<byte, MarketQueueItem, MarketPacket, MarketRecord []>()
+
+    static let instance = 
+        let i  = new MarketQueue()
+        i.NewCompleteDataEvent.Add(tester)
+        i
+
+    override x.combineItemData (a, b) = 
+        {
+            Records = Array.append a.Records b.Records
+            NextIdx = b.NextIdx
+            CurrIdx = a.CurrIdx
+            Unknown = a.Unknown
+        }
+
+    override x.processPacketCompleteness(p) = 
+        if p.IsCompleted() then
+            let rs = p.Data.Records
+            x.OnCompleted(rs)
+        else
+            printfn "NewPkt, Added curr:%i, next:%i" (p.Current) (p.Next)
+            x.dict.Add(p.Next, p)
+
+    static member Instance = instance
+
+*)

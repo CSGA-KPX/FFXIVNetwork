@@ -6,9 +6,14 @@ open LibFFXIV.GeneralPacket
 open LibFFXIV.SpecializedPacket
 open LibFFXIV.Database
 
+let MarketPacketHandler2 (idx : int, gp : FFXIVGamePacket) = 
+    let marketData = MarketPacket.ParseFromBytes(gp.Data)
+    //MarketQueue.Instance.Enqueue(new MarketQueueItem(marketData))
+    ()
+
 let MarketPacketHandler (idx : int, gp : FFXIVGamePacket) = 
     let marketData = MarketPacket.ParseFromBytes(gp.Data)
-    let sb = (new StringBuilder()).AppendFormat("====MarketData{0}/{1}====\r\n", marketData.CurrIdx, marketData.PrevIdx)
+    let sb = (new StringBuilder()).AppendFormat("====MarketData{0}/{1}====\r\n", marketData.CurrIdx, marketData.NextIdx)
     
     for data in marketData.Records do
         let price = data.Price

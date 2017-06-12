@@ -9,7 +9,8 @@ let M () =
     PCap.Start()
 
 let PacketTester() = 
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\看市场，水晶页\LoggingRawTCPPacket.txt"
+    let random = new Random()
+    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\新建文件夹\LoggingRawTCPPacket.txt"
     let lines    = IO.File.ReadAllLines(testFile)
     lines
     |> Array.map (fun x -> x.[50 ..])
@@ -18,9 +19,18 @@ let PacketTester() =
         let seq = UInt32.Parse(arr.[0])
         let nsq = UInt32.Parse(arr.[1])
         let dat = arr.[2]
-        new LibFFXIV.TcpPacket.PacketQueueItem(seq, nsq, Utils.HexString.ToBytes(dat)))
+        {
+            LibFFXIV.TcpPacket.SeqNum  = seq
+            LibFFXIV.TcpPacket.NextSeq = nsq
+            LibFFXIV.TcpPacket.Data    = Utils.HexString.ToBytes(dat)
+        }
+        )
+    //|> Array.sortBy (fun _ -> random.Next())
     |> Array.iter (fun x -> queue.Enqueue(x))
-    printfn "Queued count : %i" (queue.GetQueuedItemCount())
+    queue.GetQueuedKeys()
+    |> Seq.iter (printfn "Queued key : %A")
+    //printfn "Queued count : %A" (queue.GetQueuedKeys())
+    
 
 
 [<EntryPoint>]

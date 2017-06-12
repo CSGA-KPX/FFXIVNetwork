@@ -107,62 +107,63 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         let ms = new IO.MemoryStream(bytes)
         new XIVBinaryReader(ms)
 
-[<AbstractClassAttribute>]
-type GeneralQueueItem<'TSeq, 'TInData>(cur : 'TSeq, next : 'TSeq, data:'TInData) = 
-    member val Current = cur  with get , set
-    member val Next    = next with get , set
-    member val Data    = data with get , set
+type IQueueableItem<'TSeq, 'TData> = 
+    abstract QueueCurrentIdx : 'TSeq
+    abstract QueueNextIdx    : 'TSeq
+    abstract QueueData       : 'TData
 
     abstract IsCompleted : unit  -> bool
-    abstract IsFirst     : unit  -> bool
-    abstract IsExpired   : 'TSeq -> bool
+    abstract IsExpried   : 'TSeq -> bool
+    
+    abstract Combine     : 'TData -> 'TData
+
 
 [<AbstractClassAttribute>]
-type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TInData, 'TOutData 
+type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TOutData 
                                     when 'TSeq : equality
-                                    and 'TItem :> GeneralQueueItem<'TSeq, 'TInData>>() = 
+                                    and 'TItem :>IQueueableItem<'TSeq, 'TItem>>() as x = 
     let testtt = ""
     let oldlck func = lock testtt func
+    let evt = new Event<'TOutData>()
+    let d   = System.Collections.Generic.Dictionary<'TSeq, 'TItem>()
+    let nlog= NLog.LogManager.GetLogger(x.GetType().FullName)
 
-    member internal x.logger = NLog.LogManager.GetLogger(x.GetType().FullName)
 
-    member internal x.evt  = new Event<'TOutData>()
+    member internal x.logger = nlog
 
-    member internal x.dict = new System.Collections.Generic.Dictionary<'TSeq, 'TItem>()
+    member internal x.dict = d
 
-    member x.NewCompleteDataEvent = x.evt.Publish
+    member internal x.OnCompleted(d : 'TOutData) =
+        evt.Trigger(d)
 
-    member x.GetQueuedItemCount() = x.dict.Count
+    member x.NewCompleteDataEvent = evt.Publish
+
+    member x.GetQueuedKeys() = x.dict.Keys
 
     abstract processPacketCompleteness : 'TItem -> unit
 
-    abstract combineItemData : 'TInData * 'TInData -> 'TInData
-
-    member internal x.CombineItems([<ParamArray>] objs : 'TItem []) = 
+    member internal x.CombineItems([<ParamArray>] objs : 'TItem []) =
         objs
-        |> Array.reduce (fun acc item ->
-            acc.Next <- item.Next
-            acc.Data <- x.combineItemData(acc.Data, item.Data)
-            acc)
+        |> Array.reduce (fun acc item -> acc.Combine(item))
 
     member private x.processPacketChain(p : 'TItem) =
-        let (fwdSucc, fwdItem) = x.dict.TryGetValue(p.Current)
+        let (fwdSucc, fwdItem) = x.dict.TryGetValue(p.QueueCurrentIdx)
         let RevSearch = 
             x.dict
             |> Seq.filter (fun x -> 
-                x.Value.Current = p.Next)
+                x.Value.QueueCurrentIdx = p.QueueNextIdx)
             |> Seq.tryHead
-
+        
         match fwdSucc, RevSearch.IsSome with
         | true, true   ->
             let p3 = RevSearch.Value.Value
             let np = x.CombineItems(fwdItem, p, p3)
-            x.dict.Remove(p.Current) |> ignore
+            x.dict.Remove(p.QueueCurrentIdx) |> ignore
             x.dict.Remove(RevSearch.Value.Key) |> ignore
             x.processPacketChain(np)
         | true, false  -> 
             let np = x.CombineItems(fwdItem, p)
-            x.dict.Remove(p.Current) |> ignore
+            x.dict.Remove(p.QueueCurrentIdx) |> ignore
             x.processPacketChain(np)
         | false, true  -> 
             let np =  x.CombineItems(p, RevSearch.Value.Value)
@@ -174,10 +175,12 @@ type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TInData, 'TOutData
     member x.Enqueue(p : 'TItem) =
         oldlck (fun () -> 
             x.processPacketChain(p)
-            if x.dict.Count >= GeneralPacketReassemblyQueue<_,_,_,_>.zombieCheckLimit then
+            if x.dict.Count >= GeneralPacketReassemblyQueue<_,_,_>.zombieCheckLimit then
+                printfn "%A" (x.dict.Keys)
                 for value in x.dict.Values do
-                    let key = value.Next
-                    if value.IsExpired(p.Current) then 
+                    //TODO :: 如果dict被更改，枚举会失效
+                    let key = value.QueueNextIdx
+                    if value.IsExpried(p.QueueCurrentIdx) then 
                         x.logger.Info("Removed zombie packets key={0}", key)
                         x.dict.Remove(key) |> ignore
             )

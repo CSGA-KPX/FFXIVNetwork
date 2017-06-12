@@ -1,15 +1,20 @@
 ﻿module PCap
+open Microsoft.FSharp.Core.Operators.Checked
 open System
 open LibFFXIV.Constants
-open LibFFXIV.GeneralPacket
+open LibFFXIV.TcpPacket
 open PcapDotNet.Core
 open PcapDotNet.Packets
 open PcapDotNet.Packets.IpV4
 open PcapDotNet.Packets.Transport
 
+
+let RawPacketLogger = NLog.LogManager.GetLogger("RawTCPPacket")
+
 let queue = 
     let q = new LibFFXIV.TcpPacket.GamePacketQueue()
     q.NewCompleteDataEvent.Add(FFXIV.PacketHandler.PacketHandler)
+    q.NewCompleteDataEvent.Add((fun x -> RawPacketLogger.Trace(sprintf "Recv full packet:%s" (Utils.HexString.ToHex(x)))))
     q
 
 
@@ -27,7 +32,6 @@ let isGamePacket(tcp : TcpDatagram) =
         else
             false  
 
-let RawPacketLogger = NLog.LogManager.GetLogger("RawTCPPacket")
 
 let PacketHandler (p:Packet) = 
     let ip = p.Ethernet.IpV4
@@ -48,7 +52,13 @@ let PacketHandler (p:Packet) =
     match ip with
     | Income when isGamePacket(ip.Tcp) -> 
         RawPacketLogger.Trace(sprintf "<<<<<<%i,%i,%s" (tcp.SequenceNumber) (tcp.NextSequenceNumber) (tcp.Payload.ToMemoryStream().ToArray() |> Utils.HexString.ToHex))
-        queue.Enqueue(new LibFFXIV.TcpPacket.PacketQueueItem(tcp.SequenceNumber, tcp.NextSequenceNumber, tcp.Payload.ToMemoryStream().ToArray()))
+        queue.Enqueue(
+            {
+                SeqNum  = tcp.SequenceNumber
+                NextSeq = tcp.NextSequenceNumber
+                Data    = tcp.Payload.ToMemoryStream().ToArray()
+            })
+        //queue.Enqueue(new LibFFXIV.TcpPacket.PacketQueueItem(tcp.SequenceNumber, tcp.NextSequenceNumber, tcp.Payload.ToMemoryStream().ToArray()))
         
     | Income -> ()
     | Outcome -> () //printfn "%s %i -> %i %i " time (tcp.SourcePort) (tcp.DestinationPort) length
