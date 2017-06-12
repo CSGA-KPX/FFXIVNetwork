@@ -109,7 +109,6 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
 
 [<AbstractClassAttribute>]
 type GeneralQueueItem<'TSeq, 'TInData>(cur : 'TSeq, next : 'TSeq, data:'TInData) = 
-    
     member val Current = cur  with get , set
     member val Next    = next with get , set
     member val Data    = data with get , set

@@ -4,7 +4,7 @@ open LibFFXIV.Utils
 open LibFFXIV.GeneralPacket
 
 type PacketQueueItem (cur, next, data) = 
-    inherit LibFFXIV.Utils.GeneralQueueItem<uint32, byte []>(cur, next, data)
+    inherit GeneralQueueItem<uint32, byte []>(cur, next, data)
 
     member x.FullPacketSize() = 
         FFXIVBasePacket.GetPacketSize(x.Data)
@@ -23,7 +23,7 @@ type PacketQueueItem (cur, next, data) =
         x.IsFirst() && (x.Data.Length >= x.FullPacketSize())
 
 type GamePacketQueue() = 
-    inherit LibFFXIV.Utils.GeneralPacketReassemblyQueue<uint32, PacketQueueItem, byte [], byte []>()
+    inherit GeneralPacketReassemblyQueue<uint32, PacketQueueItem, byte [], byte []>()
 
     override x.combineItemData (a, b) = 
         Array.append a b

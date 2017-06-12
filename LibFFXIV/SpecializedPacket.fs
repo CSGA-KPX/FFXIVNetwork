@@ -8,7 +8,6 @@ open LibFFXIV.Constants
 open LibFFXIV.Utils
 
 
-
 type TradeLogRecord = 
     {
         ItemID      : uint32
@@ -129,3 +128,14 @@ type MarketPacket =
             PrevIdx = rst.Value.[1]
             Unknown = rst.Value.[2..]
         }
+
+type MarketQueueItem(packet : MarketPacket) = 
+    inherit GeneralQueueItem<byte, MarketRecord[]>(packet.PrevIdx, packet.CurrIdx, packet.Records)
+
+    override x.IsFirst() = 
+        //TODO:
+        x.Current = 0uy
+
+    override x.IsCompleted() = false
+    
+    override x.IsExpired(ref)  = false
