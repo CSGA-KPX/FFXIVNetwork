@@ -18,11 +18,7 @@ let PacketTester() =
         let seq = UInt32.Parse(arr.[0])
         let nsq = UInt32.Parse(arr.[1])
         let dat = arr.[2]
-        {
-            SeqNum  = seq
-            NextSeq = nsq
-            Data    = Utils.HexString.ToBytes(dat)
-        })
+        new LibFFXIV.TcpPacket.PacketQueueItem(seq, nsq, Utils.HexString.ToBytes(dat)))
     |> Array.iter (fun x -> queue.Enqueue(x))
     printfn "Queued count : %i" (queue.GetQueuedItemCount())
 

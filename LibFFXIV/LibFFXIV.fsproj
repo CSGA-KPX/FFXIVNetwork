@@ -56,6 +56,7 @@
     <Compile Include="Database.fs" />
     <Compile Include="GeneralPacket.fs" />
     <Compile Include="SpecializedPacket.fs" />
+    <Compile Include="TcpPacket.fs" />
     <Compile Include="DevUtils.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
