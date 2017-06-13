@@ -8,8 +8,7 @@ open LibFFXIV.Database
 
 let MarketPacketHandler2 (idx : int, gp : FFXIVGamePacket) = 
     let marketData = MarketPacket.ParseFromBytes(gp.Data)
-    //MarketQueue.Instance.Enqueue(new MarketQueueItem(marketData))
-    ()
+    MarketQueue.Instance.Enqueue(MarketPacket.ParseFromBytes(gp.Data))
 
 let MarketPacketHandler (idx : int, gp : FFXIVGamePacket) = 
     let marketData = MarketPacket.ParseFromBytes(gp.Data)
@@ -59,6 +58,6 @@ let PacketHandler (bytes : byte []) =
             let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
             AllPacketHandler(idx ,spCount , gp)
             match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
-            | Opcodes.Market -> MarketPacketHandler(idx, gp)
+            | Opcodes.Market -> MarketPacketHandler2(idx, gp)
             | Opcodes.TradeLog -> TradeLogPacketHandler(idx, gp)
             | _ -> ()) // UnknownPacketHandler(idx ,spCount , gp))

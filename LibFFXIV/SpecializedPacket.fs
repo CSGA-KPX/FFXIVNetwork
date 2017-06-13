@@ -103,6 +103,25 @@ type MarketPacket =
         Unknown : bytes // 6bytes
     }
 
+    interface IQueueableItem<byte, MarketPacket> with
+        member x.QueueCurrentIdx = x.CurrIdx
+        member x.QueueNextIdx    = x.NextIdx
+        member x.QueueData       = x
+
+        member x.IsCompleted () = 
+            x.CurrIdx = x.NextIdx
+
+        member x.IsExpried   (ref) = 
+            false
+    
+        member x.Combine     (y)   = 
+            {
+                Records = Array.append x.Records y.Records
+                NextIdx = y.NextIdx
+                CurrIdx = x.CurrIdx
+                Unknown = x.Unknown
+            }
+
     static member private logger = NLog.LogManager.GetCurrentClassLogger()
 
     static member private recordSize = 112
@@ -128,46 +147,36 @@ type MarketPacket =
             CurrIdx = rst.Value.[1]
             Unknown = rst.Value.[2..]
         }
-(*
-type MarketQueueItem(packet : MarketPacket) = 
-    inherit GeneralQueueItem<byte, MarketPacket>(packet.CurrIdx, packet.NextIdx, packet)
-
-    override x.IsFirst() = 
-        //loop list, always true
-        true
-
-    override x.IsCompleted() = 
-        x.Current = x.Next
-    
-    override x.IsExpired(ref)  = false
 
 let tester (ra : MarketRecord []) = 
-    printfn "Ra.Length : %i" ra.Length
+    let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
+    
+    for data in ra do
+        let price = data.Price
+        let count = data.Count
+        let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
+        let isHQ  = data.IsHQ
+        let meld  = data.MeldCount
+        let str = sprintf "%s P:%i C:%i HQ:%b Meld:%i Seller:%s" item price count isHQ meld (data.Name)
+        sb.AppendLine(str) |> ignore
+    sb.AppendLine("====MarketDataEnd====") |> ignore
+    NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
 type MarketQueue private () = 
-    inherit GeneralPacketReassemblyQueue<byte, MarketQueueItem, MarketPacket, MarketRecord []>()
+    inherit GeneralPacketReassemblyQueue<byte, MarketPacket, MarketRecord []>()
 
     static let instance = 
         let i  = new MarketQueue()
         i.NewCompleteDataEvent.Add(tester)
         i
 
-    override x.combineItemData (a, b) = 
-        {
-            Records = Array.append a.Records b.Records
-            NextIdx = b.NextIdx
-            CurrIdx = a.CurrIdx
-            Unknown = a.Unknown
-        }
-
     override x.processPacketCompleteness(p) = 
-        if p.IsCompleted() then
-            let rs = p.Data.Records
+        let qItem = p :> IQueueableItem<byte, MarketPacket>
+        if qItem.IsCompleted() then
+            let rs = p.Records |> Array.sortBy (fun x -> x.Price)
             x.OnCompleted(rs)
         else
-            printfn "NewPkt, Added curr:%i, next:%i" (p.Current) (p.Next)
-            x.dict.Add(p.Next, p)
+            printfn "NewPkt, Added curr:%i, next:%i" (qItem.QueueCurrentIdx) (qItem.QueueNextIdx)
+            x.dict.Add(qItem.QueueCurrentIdx, p)
 
     static member Instance = instance
-
-*)
