@@ -9,10 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPHelper", "IPHelper.Net\Sr
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV", "LibFFXIV\LibFFXIV.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibXIVDMF", "LibXIVDMF\LibXIVDMF.fsproj", "{8A3C2B67-647D-431A-9AC1-7695667B0DE7}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -30,9 +29,16 @@ Global
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

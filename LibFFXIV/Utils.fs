@@ -110,7 +110,6 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
 type IQueueableItem<'TSeq, 'TData> = 
     abstract QueueCurrentIdx : 'TSeq
     abstract QueueNextIdx    : 'TSeq
-    abstract QueueData       : 'TData
 
     abstract IsCompleted : unit  -> bool
     abstract IsExpried   : 'TSeq -> bool
@@ -141,6 +140,11 @@ type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TOutData
     member x.GetQueuedKeys() = x.dict.Keys
 
     abstract processPacketCompleteness : 'TItem -> unit
+
+    abstract preProcessPacketChain     : 'TItem -> unit
+
+    default x.preProcessPacketChain(data : 'TItem) = ()
+
 
     member internal x.CombineItems([<ParamArray>] objs : 'TItem []) =
         objs
@@ -174,6 +178,7 @@ type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TOutData
 
     member x.Enqueue(p : 'TItem) =
         oldlck (fun () -> 
+            x.preProcessPacketChain(p)
             x.processPacketChain(p)
             if x.dict.Count >= GeneralPacketReassemblyQueue<_,_,_>.zombieCheckLimit then
                 printfn "%A" (x.dict.Keys)

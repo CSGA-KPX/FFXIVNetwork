@@ -60,6 +60,15 @@
     <Compile Include="DevUtils.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
+    <None Include="item_data_3_5_chs3_5_test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="recipe_info.jp.3.5.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="xivdb_items.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Data">

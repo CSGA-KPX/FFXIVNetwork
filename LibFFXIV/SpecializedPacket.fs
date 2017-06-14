@@ -106,7 +106,6 @@ type MarketPacket =
     interface IQueueableItem<byte, MarketPacket> with
         member x.QueueCurrentIdx = x.CurrIdx
         member x.QueueNextIdx    = x.NextIdx
-        member x.QueueData       = x
 
         member x.IsCompleted () = 
             x.CurrIdx = x.NextIdx
@@ -148,27 +147,18 @@ type MarketPacket =
             Unknown = rst.Value.[2..]
         }
 
-let tester (ra : MarketRecord []) = 
-    let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
-    
-    for data in ra do
-        let price = data.Price
-        let count = data.Count
-        let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
-        let isHQ  = data.IsHQ
-        let meld  = data.MeldCount
-        let str = sprintf "%s P:%i C:%i HQ:%b Meld:%i Seller:%s" item price count isHQ meld (data.Name)
-        sb.AppendLine(str) |> ignore
-    sb.AppendLine("====MarketDataEnd====") |> ignore
-    NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
-type MarketQueue private () = 
+
+type MarketQueue () = 
     inherit GeneralPacketReassemblyQueue<byte, MarketPacket, MarketRecord []>()
 
-    static let instance = 
-        let i  = new MarketQueue()
-        i.NewCompleteDataEvent.Add(tester)
-        i
+    override x.preProcessPacketChain(p : MarketPacket) = 
+        let qItem = p :> IQueueableItem<byte, MarketPacket>
+        let isFirstPacket = qItem.QueueCurrentIdx = 0uy && qItem.QueueNextIdx = 10uy
+        let isDictNotEmpty= x.dict.Count <> 0
+        if isFirstPacket && isDictNotEmpty then
+            x.logger.Error("Got start packet while dict is not empty. dict.Clear()")
+            x.dict.Clear()
 
     override x.processPacketCompleteness(p) = 
         let qItem = p :> IQueueableItem<byte, MarketPacket>
@@ -176,7 +166,5 @@ type MarketQueue private () =
             let rs = p.Records |> Array.sortBy (fun x -> x.Price)
             x.OnCompleted(rs)
         else
-            printfn "NewPkt, Added curr:%i, next:%i" (qItem.QueueCurrentIdx) (qItem.QueueNextIdx)
+            //printfn "NewPkt, Added curr:%i, next:%i" (qItem.QueueCurrentIdx) (qItem.QueueNextIdx)
             x.dict.Add(qItem.QueueCurrentIdx, p)
-
-    static member Instance = instance

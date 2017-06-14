@@ -5,6 +5,11 @@ open System.Collections.Generic
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 
+
+//type XIVItemDataProvider = JsonProvider<Constants.XIVItemDataSample>
+(*type XIVItemDataProvider = JsonProvider<"item_data_3_5_chs3_5_test.json">
+type XIVRecipeProvider   = JsonProvider<"recipe_info.jp.3.5.json">*)
+
 type XIVDBItem = 
     {
         ID      : int

@@ -10,7 +10,7 @@ let M () =
 
 let PacketTester() = 
     let random = new Random()
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\新建文件夹\LoggingRawTCPPacket.txt"
+    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\看市场，水晶页\LoggingRawTCPPacket.txt"
     let lines    = IO.File.ReadAllLines(testFile)
     lines
     |> Array.map (fun x -> x.[50 ..])
@@ -35,8 +35,9 @@ let PacketTester() =
 
 [<EntryPoint>]
 let main argv = 
-    //M()
-    PacketTester()
+    M()
+    //PacketTester()
+    printfn  "%A" (LibXIVDMF.Market.FetchMarketData(4))
     Console.ReadLine() |> ignore
 
     0 // 返回整数退出代码

@@ -27,7 +27,6 @@ type QueuedPacket =
     interface IQueueableItem<uint32, QueuedPacket> with
         member x.QueueCurrentIdx = x.SeqNum
         member x.QueueNextIdx    = x.NextSeq
-        member x.QueueData       = x
 
         member x.IsCompleted() =
             x.IsFirstPacket() && (x.Data.Length >= x.FullPacketSize())

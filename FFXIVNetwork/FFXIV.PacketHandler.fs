@@ -6,24 +6,33 @@ open LibFFXIV.GeneralPacket
 open LibFFXIV.SpecializedPacket
 open LibFFXIV.Database
 
-let MarketPacketHandler2 (idx : int, gp : FFXIVGamePacket) = 
-    let marketData = MarketPacket.ParseFromBytes(gp.Data)
-    MarketQueue.Instance.Enqueue(MarketPacket.ParseFromBytes(gp.Data))
-
-let MarketPacketHandler (idx : int, gp : FFXIVGamePacket) = 
-    let marketData = MarketPacket.ParseFromBytes(gp.Data)
-    let sb = (new StringBuilder()).AppendFormat("====MarketData{0}/{1}====\r\n", marketData.CurrIdx, marketData.NextIdx)
+let tester (ra : MarketRecord []) = 
+    let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
     
-    for data in marketData.Records do
+    for data in ra do
         let price = data.Price
         let count = data.Count
-        let item  = XIVItemDict.[data.Itemid |> int].ToString()
+        let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
         let isHQ  = data.IsHQ
         let meld  = data.MeldCount
         let str = sprintf "%s P:%i C:%i HQ:%b Meld:%i Seller:%s" item price count isHQ meld (data.Name)
         sb.AppendLine(str) |> ignore
     sb.AppendLine("====MarketDataEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
+
+let submitData (ra : MarketRecord []) = 
+    NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
+    LibXIVDMF.Market.SubmitMarketData(ra)
+    
+let marketQueue = 
+    let i  = new MarketQueue()
+    i.NewCompleteDataEvent.Add(tester)
+    i.NewCompleteDataEvent.Add(submitData)
+    i
+
+let MarketPacketHandler2 (idx : int, gp : FFXIVGamePacket) = 
+    let marketData = MarketPacket.ParseFromBytes(gp.Data)
+    marketQueue.Enqueue(MarketPacket.ParseFromBytes(gp.Data))
 
 let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) = 
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
