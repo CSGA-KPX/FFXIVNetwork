@@ -35,11 +35,16 @@ let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) =
     |> NLog.LogManager.GetCurrentClassLogger().Info
 
 let FetchMarketData(itemId : int) =
-    let client = getClient()
-    let resp   = client.GetStringAsync(dataUrl itemId).Result
-    toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp)
+    try
+        let client = getClient()
+        let resp   = client.GetStringAsync(dataUrl itemId).Result
+        Some(toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp))
+    with 
+    | e ->
+        //printfn "%s" (e.ToString())
+        None
 
-let TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
+let internal TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
     [|
         //(price, count)
         let samples = samples |> Array.sortBy (fun x -> x.Price)
@@ -58,9 +63,24 @@ let TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cut
                     yield ((int) record.Price, takeCount)
     |]
 
-let GetStdEv(samples : (int * int) []) = 
+type StdEv = 
+    {
+        Average   : float
+        Deviation : float
+    }
+
+    member x.Plus(y : float) = 
+        {
+            Average   = x.Average * y
+            Deviation = x.Deviation * y
+        }
+
+    override x.ToString() = 
+        sprintf "%.0f±%.0f" x.Average x.Deviation
+
+let GetStdEv(market : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
+    let samples = TakeMarketSample(market, cutPct)
     let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
-    printfn "count : %A" itemCount
     let average = 
         let priceSum = samples |> Array.sumBy (fun (a, b) -> (float) (a * b))
         priceSum / itemCount
@@ -68,4 +88,5 @@ let GetStdEv(samples : (int * int) []) =
         samples
         |> Array.sumBy (fun (a, b) -> (float b) * (( (float a) - average) ** 2.0) )
     let ev  = sum / itemCount
-    (average, sqrt ev)
+    { Average = average; Deviation = sqrt ev }
+    //(average, sqrt ev)
