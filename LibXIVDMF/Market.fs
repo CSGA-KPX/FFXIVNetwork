@@ -38,3 +38,34 @@ let FetchMarketData(itemId : int) =
     let client = getClient()
     let resp   = client.GetStringAsync(dataUrl itemId).Result
     toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp)
+
+let TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
+    [|
+        //(price, count)
+        let samples = samples |> Array.sortBy (fun x -> x.Price)
+        let itemCount = samples |> Array.sumBy (fun x -> x.Count |> int)
+        let cutLen = itemCount * cutPct / 100
+        let mutable rest = cutLen
+        match itemCount = 0 , cutLen = 0 with
+        | true, _ -> ()
+        | false, true ->
+            yield ((int) samples.[0].Price, 1)
+        | false, false ->
+            for record in samples do
+                let takeCount = min rest (record.Count |> int)
+                if takeCount <> 0 then
+                    rest <- rest - takeCount
+                    yield ((int) record.Price, takeCount)
+    |]
+
+let GetStdEv(samples : (int * int) []) = 
+    let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
+    printfn "count : %A" itemCount
+    let average = 
+        let priceSum = samples |> Array.sumBy (fun (a, b) -> (float) (a * b))
+        priceSum / itemCount
+    let sum = 
+        samples
+        |> Array.sumBy (fun (a, b) -> (float b) * (( (float a) - average) ** 2.0) )
+    let ev  = sum / itemCount
+    (average, sqrt ev)

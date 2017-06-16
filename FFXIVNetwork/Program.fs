@@ -31,14 +31,28 @@ let PacketTester() =
     |> Seq.iter (printfn "Queued key : %A")
     //printfn "Queued count : %A" (queue.GetQueuedKeys())
     
-
+let QueryRecipe(lodeId : string) = 
+    let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials("fddfe1ebdbc")
+    if (recipe.IsSome) then
+        
+        ()
+    else
+        printfn "找不到配方"
+    ()
 
 [<EntryPoint>]
 let main argv = 
-    M()
+    //M()
     //PacketTester()
-    printfn  "%A" (LibXIVDMF.Market.FetchMarketData(4))
+    //printfn  "%A" (LibXIVDMF.Market.FetchMarketData(4))
+    //printfn  "Test %A" (LibFFXIV.Database.ItemProvider.FromName("金币"))
+    let market = LibXIVDMF.Market.FetchMarketData(4)
+    let sample = (LibXIVDMF.Market.TakeMarketSample(market, 25))
+    printfn "4     : %A" sample
+    printfn "4std  : %A"(LibXIVDMF.Market.GetStdEv(sample))
+    //printfn "Test %A" (LibFFXIV.Database.SuRecipeData.Instance.GetMaterials("fddfe1ebdbc"))
     Console.ReadLine() |> ignore
+
 
     0 // 返回整数退出代码
     

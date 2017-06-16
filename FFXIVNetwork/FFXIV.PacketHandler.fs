@@ -12,7 +12,8 @@ let tester (ra : MarketRecord []) =
     for data in ra do
         let price = data.Price
         let count = data.Count
-        let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
+        let item  = SuItemData.Instance.FromXIVId(data.Itemid |> int).Value.ToString()
+        //let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
         let isHQ  = data.IsHQ
         let meld  = data.MeldCount
         let str = sprintf "%s P:%i C:%i HQ:%b Meld:%i Seller:%s" item price count isHQ meld (data.Name)
@@ -22,7 +23,7 @@ let tester (ra : MarketRecord []) =
 
 let submitData (ra : MarketRecord []) = 
     NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-    LibXIVDMF.Market.SubmitMarketData(ra)
+    //LibXIVDMF.Market.SubmitMarketData(ra)
     
 let marketQueue = 
     let i  = new MarketQueue()
@@ -38,7 +39,7 @@ let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) =
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
     for log in tradeLogs.Records do
-        let item = XIVItemDict.[log.ItemID |> int].ToString()
+        let item  = SuItemData.Instance.FromXIVId(log.ItemID |> int).ToString()
         let str = sprintf "%s P:%i C:%i HQ:%b Buyer:%s" item log.Price log.Count log.IsHQ log.BuyerName
         sb.AppendLine(str) |> ignore
     sb.AppendLine("====TradeLogDataEnd====") |> ignore
