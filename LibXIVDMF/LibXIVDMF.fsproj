@@ -84,13 +84,6 @@
     </Reference>
     <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
-      <Name>LibFFXIV</Name>
-      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
