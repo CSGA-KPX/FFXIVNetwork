@@ -1,3 +1,6 @@
 [submodule "IPHelper.Net"]
 	path = IPHelper.Net
 	url = https://github.com/taesiri/IPHelper.Net
+[submodule "LibFFXIV"]
+	path = LibFFXIV
+	url = https://kpx2dland.visualstudio.com/_git/LibFFXIV
