@@ -69,49 +69,38 @@ type MainForm () as this =
         list.Columns.Add("Total").Width <- -2
         list.Columns.Add("Last Update").Width <- -2
 
-        let AddFetchResult (query : Utils.Query, res : LibXIVDMF.Market.MarketFetchResult, count : int) = 
-            let cutOff = 25
-            let arr = 
-                [|
-                    if res.Success then
-                        let std =  Utils.GetStdEv(res.Records.Value, cutOff)
-                        yield query.ToString()
-                        yield res.Item.GetName()
-                        yield std.ToString()
-                        yield count.ToString()
-                        yield std.Plus(count |> float).ToString()
-                        yield res.Updated
-                    else
-                        yield query.ToString()
-                        yield res.Item.GetName()
-                        yield "暂缺"
-                        yield count.ToString()
-                        yield "--"
-                        yield "--"
-                |]
-            list.Items.Add(new ListViewItem(arr)) |> ignore
-
+        let cutOff = 25
         for q in queries do 
-            let item = q.TryGetItem()
-            if item.IsSome then
-                let item = item.Value
-                match q with 
-                | Utils.Query.Item         x ->
-                    let x = LibXIVDMF.Market.FetchMarketData(item)
-                    AddFetchResult(q, x, 1)
-                | Utils.Query.Materials    x ->
-                    let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item.LodestoneId)
-                    if recipe.IsSome then
-                        recipe.Value
-                        |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count)
-                        |> Array.iter(fun (result, count) -> AddFetchResult(q, result, count))
-                    else
-                        list.Items.Add(new ListViewItem("找不到配方"+q.TryGetItem().ToString())) |> ignore
-                | Utils.Query.MaterialsRec x ->
-                    failwithf "尚未实现递归配方"
-            else
-                list.Items.Add(new ListViewItem("找不到物品"+q.ToString())) |> ignore
-
+            try 
+                let ms = q.GetMaterials() |> Array.sortBy (fun (a, b) -> a.Item.XIVDbId)
+                let mutable total = Utils.StdEv.Zero
+                for (res, count) in ms do 
+                    let arr = 
+                        [|
+                            if res.Success then
+                                let std =  Utils.GetStdEv(res.Records.Value, cutOff)
+                                total <- total + (std * count)
+                                yield q.ToString()
+                                yield res.Item.GetName()
+                                yield std.ToString()
+                                yield String.Format("{0:0.###}", count)
+                                yield (std * count).ToString()
+                                yield res.Updated
+                            else
+                                yield q.ToString()
+                                yield res.Item.GetName()
+                                yield "暂缺"
+                                yield String.Format("{0:0.###}", count)
+                                yield "--"
+                                yield "--"
+                        |]
+                    list.Items.Add(new ListViewItem(arr)) |> ignore
+                let sumUp = [| q.ToString(); "总计"; "--"; "--"; total.ToString(); "--" |]
+                list.Items.Add(new ListViewItem(sumUp)) |> ignore
+            with 
+            | Failure(msg) ->
+                let arr = [| q.ToString(); msg; "--"; "--"; "--"; "--" |]
+                list.Items.Add(new ListViewItem(arr)) |> ignore
         let tp = new TabPage(title)
         tp.Controls.Add(list)
         tabControl1.TabPages.Add(tp)

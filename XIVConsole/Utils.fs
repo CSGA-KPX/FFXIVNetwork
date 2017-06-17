@@ -23,6 +23,29 @@ type Query =
         else
             None
 
+    member x.GetMaterials() = 
+        let item = x.TryGetItem()
+        if item.IsNone then
+            failwithf "找不到物品%A" x
+        else
+            let item = item.Value
+            match x with 
+            | Item         x ->
+                [| LibXIVDMF.Market.FetchMarketData(item) , 1.0 |]
+            | Materials    x ->
+                let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item.LodestoneId)
+                if recipe.IsSome then
+                    let test = recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count)
+                    [| yield! recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count) |]
+                else
+                    failwithf "找不到配方:%A" x
+            | MaterialsRec x ->
+                let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item.LodestoneId)
+                if recipe.IsSome then
+                    [| yield! recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count) |]
+                else
+                    failwithf "找不到配方:%A" x
+
     static member FromString(q : string) = 
         if   q.StartsWith("!!") then
             MaterialsRec q.[2..] 
@@ -55,15 +78,26 @@ type StdEv =
         Average   : float
         Deviation : float
     }
+    override x.ToString() = 
+        String.Format("{0:n0}±{1:n0}", x.Average, x.Deviation)
 
-    member x.Plus(y : float) = 
+    static member (*) (x : StdEv, y : float) = 
         {
             Average   = x.Average * y
             Deviation = x.Deviation * y
         }
 
-    override x.ToString() = 
-        sprintf "%.0f±%.0f" x.Average x.Deviation
+    static member (+) (x : StdEv, y : StdEv) = 
+        {
+            Average   = x.Average + y.Average
+            Deviation = x.Deviation + y.Deviation
+        }
+
+    static member Zero = 
+        {
+            Average   = 0.0
+            Deviation = 0.0
+        }
 
 let GetStdEv(market : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
     let samples = TakeMarketSample(market, cutPct)

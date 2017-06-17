@@ -33,6 +33,13 @@ let main argv =
         else
             printfn "错误：找不到物品%s" item
         //printfn "Test %A" (LibFFXIV.Database.SuRecipeData.Instance.GetMaterials("fddfe1ebdbc"))
-        printfn "===================================="
-    Console.ReadLine() |> ignore*)
+        printfn "===================================="*)
+    //let item = LibFFXIV.Database.SuItemData.Instance.FromName("加隆德大地皮帽")
+    //let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item.Value.LodestoneId)
+    //if ma.IsSome then
+    //    ma.Value
+    //    |> Array.iter (printfn "%A")
+    //else
+    //    printfn "失败"
+    //Console.ReadLine() |> ignore
     0 // 返回整数退出代码
