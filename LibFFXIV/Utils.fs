@@ -42,6 +42,9 @@ let internal IsByteArrayAllZero (bytes : byte[]) =
     bytes
     |> Array.exists (fun x -> x <> 0uy)
 
+/// <summary>
+/// Unix时间戳
+/// </summary>
 type TimeStamp(utc : DateTime) = 
     let utc = utc
     member x.GetUTCTime()  = utc
@@ -52,42 +55,71 @@ type TimeStamp(utc : DateTime) =
 
     static member private UTC = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
 
-    static member FromSeconds(i : uint32) = 
-        new TimeStamp(TimeStamp.UTC.AddSeconds(i |> float))
+    static member FromSeconds(sec : uint32) = 
+        new TimeStamp(TimeStamp.UTC.AddSeconds(sec |> float))
 
-    static member FromMilliseconds(i : uint64) = 
-        new TimeStamp(TimeStamp.UTC.AddMilliseconds(i |> float))
+    static member FromMilliseconds(ms : uint64) = 
+        new TimeStamp(TimeStamp.UTC.AddMilliseconds(ms |> float))
 
 type XIVBinaryReader(ms : IO.MemoryStream) = 
     inherit IO.BinaryReader(ms)
 
+    /// <summary>
+    /// 是否读取到流末尾
+    /// </summary>
     member x.IsEnd() = 
         x.BaseStream.Position = x.BaseStream.Length
 
+    /// <summary>
+    /// 读取定长UTF8字符串，以0x00填充至指定长度
+    /// </summary>
+    /// <param name="len">长度</param>
     member x.ReadFixedUTF8(len : int) = 
         let bytes = x.ReadBytes(len)
         Text.Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])
 
+    /// <summary>
+    /// 读取指定长度字节数组，而不提升位置
+    /// </summary>
+    /// <param name="len">长度</param>
     member x.PeekBytes(len : int) = 
         let origPos = x.BaseStream.Position
         let bytes   = x.ReadBytes(len)
         x.BaseStream.Position <- origPos
         bytes
 
+    /// <summary>
+    /// 读取指定长度字节为16进制字符串
+    /// </summary>
+    /// <param name="len">长度</param>
     member x.ReadHexString(len : int) = 
         HexString.ToHex(x.ReadBytes(len))
 
+    /// <summary>
+    /// 读取剩余部分为数组
+    /// </summary>
     member x.ReadRestBytes() = 
         let bs = x.BaseStream
         let len = bs.Length - bs.Position
         x.ReadBytes(len |> int)
 
+    /// <summary>
+    /// 读取秒(uint32)单位的时间戳
+    /// </summary>
     member x.ReadTimeStampSec() = 
         TimeStamp.FromSeconds(x.ReadUInt32())
 
+    /// <summary>
+    /// 读取毫秒(uint64)单位的时间戳
+    /// </summary>
     member x.ReadTimeStampMillisec() = 
         TimeStamp.FromMilliseconds(x.ReadUInt64())
 
+    /// <summary>
+    /// 将剩余字节分块返回
+    /// </summary>
+    /// <param name="size">分块大小</param>
+    /// <param name="filterZeroChunks">是否滤除全零分块</param>
     member x.ReadRestBytesAsChunk(size : int, ?filterZeroChunks : bool) = 
         let needFilter = defaultArg filterZeroChunks false
         let (chunks, tail) = 
@@ -107,6 +139,7 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         let ms = new IO.MemoryStream(bytes)
         new XIVBinaryReader(ms)
 
+/// 提供碎片拼接相关数据
 type IQueueableItem<'TSeq, 'TData> = 
     abstract QueueCurrentIdx : 'TSeq
     abstract QueueNextIdx    : 'TSeq
@@ -114,6 +147,7 @@ type IQueueableItem<'TSeq, 'TData> =
     abstract IsCompleted : unit  -> bool
     abstract IsExpried   : 'TSeq -> bool
     
+    /// 将两个'TData合并，并修改索引值
     abstract Combine     : 'TData -> 'TData
 
 
