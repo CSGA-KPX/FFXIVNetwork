@@ -6,22 +6,14 @@ open MBrace.FsPickler.Json
 open System.Net.Http.Headers
 
 let   toJson = FsPickler.CreateJsonSerializer(false, true)
-//let fromJson = FsPickler.
 let utf8   = new Text.UTF8Encoding(false)
 let dataUrl itemId = sprintf "https://xiv.danmaku.org/order/%i" itemId
+
 let getClient() =
     let client  = new HttpClient()
     client.DefaultRequestHeaders.Accept.Clear()
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"))
     client
-
-type AveragePriceCalculationMethod = 
-    | Top25Pct = 0
-    | Top50Pct = 1
-    | Top75Pct = 2
-    | All      = 3
-
-
 
 let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) = 
     let itemId = ra.[0].Itemid |> int
@@ -34,59 +26,36 @@ let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) =
     sprintf "Server resp: %s, code:%s" (resp.Content.ReadAsStringAsync().Result) (resp.StatusCode.ToString())
     |> NLog.LogManager.GetCurrentClassLogger().Info
 
-let FetchMarketData(itemId : int) =
-    try
-        let client = getClient()
-        let resp   = client.GetStringAsync(dataUrl itemId).Result
-        Some(toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp))
-    with 
-    | e ->
-        //printfn "%s" (e.ToString())
-        None
-
-let internal TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
-    [|
-        //(price, count)
-        let samples = samples |> Array.sortBy (fun x -> x.Price)
-        let itemCount = samples |> Array.sumBy (fun x -> x.Count |> int)
-        let cutLen = itemCount * cutPct / 100
-        let mutable rest = cutLen
-        match itemCount = 0 , cutLen = 0 with
-        | true, _ -> ()
-        | false, true ->
-            yield ((int) samples.[0].Price, 1)
-        | false, false ->
-            for record in samples do
-                let takeCount = min rest (record.Count |> int)
-                if takeCount <> 0 then
-                    rest <- rest - takeCount
-                    yield ((int) record.Price, takeCount)
-    |]
-
-type StdEv = 
+type MarketFetchResult = 
     {
-        Average   : float
-        Deviation : float
+        Records : LibFFXIV.SpecializedPacket.MarketRecord [] option
+        Item    : LibFFXIV.Database.SuItemRecord
+        Success : bool
+        Status  : string
+        Updated : string
     }
 
-    member x.Plus(y : float) = 
-        {
-            Average   = x.Average * y
-            Deviation = x.Deviation * y
-        }
+let FetchMarketData(item : LibFFXIV.Database.SuItemRecord) =
+    let client = getClient()
+    let res    = client.GetAsync(dataUrl (item.XIVDbId)).Result
+    let resp   = res.Content.ReadAsStringAsync().Result
+    let update = 
+        let v = res.Content.Headers.LastModified
+        if v.HasValue then
+            v.Value.ToLocalTime().ToString()
+        else
+            "N/A"
 
-    override x.ToString() = 
-        sprintf "%.0f±%.0f" x.Average x.Deviation
-
-let GetStdEv(market : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
-    let samples = TakeMarketSample(market, cutPct)
-    let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
-    let average = 
-        let priceSum = samples |> Array.sumBy (fun (a, b) -> (float) (a * b))
-        priceSum / itemCount
-    let sum = 
-        samples
-        |> Array.sumBy (fun (a, b) -> (float b) * (( (float a) - average) ** 2.0) )
-    let ev  = sum / itemCount
-    { Average = average; Deviation = sqrt ev }
-    //(average, sqrt ev)
+    let records = 
+        if res.IsSuccessStatusCode then
+            Some(toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp))
+        else
+            NLog.LogManager.GetCurrentClassLogger().Info("获取价格失败 状态码：{0}", res.StatusCode)
+            None
+    {
+        Records = records
+        Item    = item
+        Success = res.IsSuccessStatusCode
+        Status  = res.StatusCode.ToString()
+        Updated = update
+    }

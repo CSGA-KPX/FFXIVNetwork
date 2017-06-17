@@ -42,32 +42,10 @@ let QueryRecipe(lodeId : string) =
 
 [<EntryPoint>]
 let main argv = 
-    //M()
+    M()
     //PacketTester()
     //printfn  "%A" (LibXIVDMF.Market.FetchMarketData(4))
     //printfn  "Test %A" (LibFFXIV.Database.ItemProvider.FromName("金币"))
-    let item = "fddfe1ebdbc"
-    let cutOff = 25
-    let itemObj = LibFFXIV.Database.ItemProvider.FromLodeId(item)
-    if (itemObj.IsSome) then
-        printfn "=============%s=============" (itemObj.Value.NameChs)
-        let materials = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item)
-        if materials.IsSome then
-            printfn "%10s  \t%2s  %10s  %10s" "名称" "数量" "单价" "总价"
-            for (material, count) in materials.Value do 
-                let itemid = material.XIVDbId
-                let market = LibXIVDMF.Market.FetchMarketData(itemid)
-                if market.IsSome then
-                    let single = LibXIVDMF.Market.GetStdEv(market.Value, cutOff)
-                    let final  = single.Plus(count |> float)
-                    printfn "%10s %2i %9O  %9O" (material.GetName()) count single final
-                else
-                    printfn "%10s %2i        暂缺       暂缺" (material.GetName()) count
-                //printfn "4std  : %A"(LibXIVDMF.Market.GetStdEv(market, 25))
-        else
-            printfn "错误：找不到物品%s" item
-        //printfn "Test %A" (LibFFXIV.Database.SuRecipeData.Instance.GetMaterials("fddfe1ebdbc"))
-        printfn "===================================="
     Console.ReadLine() |> ignore
 
 

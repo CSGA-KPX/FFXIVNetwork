@@ -23,7 +23,7 @@ let tester (ra : MarketRecord []) =
 
 let submitData (ra : MarketRecord []) = 
     NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-    //LibXIVDMF.Market.SubmitMarketData(ra)
+    LibXIVDMF.Market.SubmitMarketData(ra)
     
 let marketQueue = 
     let i  = new MarketQueue()

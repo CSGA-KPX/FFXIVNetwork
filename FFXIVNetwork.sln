@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibXIVDMF", "LibXIVDMF\LibX
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV", "LibFFXIV\LibFFXIV\LibFFXIV.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XIVConsole", "XIVConsole\XIVConsole.fsproj", "{AF964A55-D344-4125-8EB5-EA1096AB6630}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
