@@ -2,6 +2,47 @@
 open System
 open System.Windows.Forms
 
+
+let GetListView () =
+    let list = new ListView(
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines     = true,
+                    AllowColumnReorder = true,
+                    MultiSelect   = true,
+                    Dock          = DockStyle.Fill)
+        
+    [| "Query"; "Item"; "Price"; "Count"; "Total"; "Last Update" |]
+    |> Array.iter (fun x -> list.Columns.Add(x).Width <- -2)
+
+    let keydown (e : KeyEventArgs) =
+        if e.Control then
+            match e.KeyCode with
+            | Keys.A ->
+                e.SuppressKeyPress <- true
+                for item in list.Items do 
+                    item.Selected <- true
+            | Keys.C ->
+                e.SuppressKeyPress <- true
+                let sb = new Text.StringBuilder()
+                let arr = 
+                    [|
+                        for header in list.Columns do 
+                            yield header.Text
+                    |]
+                sb.AppendLine(String.Join("\t", arr)) |> ignore
+                for item in list.Items do 
+                    let arr = 
+                        [|
+                            for subitem in item.SubItems do 
+                                yield subitem.Text
+                        |]
+                    sb.AppendLine(String.Join("\t", arr)) |> ignore
+                Clipboard.SetText(sb.ToString())
+            | _ -> ()
+    list.KeyDown.Add(keydown)
+    list
+
 type MainForm () as this = 
     inherit Form()
     let textBox1 = new TextBox()
@@ -64,15 +105,7 @@ type MainForm () as this =
         tabControl1.SelectedTab <- tp
 
     member private x.Test (title, queries, tp) = 
-        let list = new ListView(
-                        View = View.Details,
-                        FullRowSelect = true,
-                        GridLines     = true,
-                        AllowColumnReorder = true,
-                        MultiSelect   = true,
-                        Dock          = DockStyle.Fill)
-        [| "Query"; "Item"; "Price"; "Count"; "Total"; "Last Update" |]
-        |> Array.iter (fun x -> list.Columns.Add(x).Width <- -2)
+        let list = GetListView()
 
         let cutOff = 25
 

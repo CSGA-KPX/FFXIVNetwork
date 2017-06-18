@@ -4,6 +4,7 @@ open System
 open System.Windows.Forms
 
 
+[<STAThread>]
 [<EntryPoint>]
 let main argv = 
     Application.EnableVisualStyles();
