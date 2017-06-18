@@ -39,7 +39,7 @@ let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) =
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
     for log in tradeLogs.Records do
-        let item  = SuItemData.Instance.FromXIVId(log.ItemID |> int).ToString()
+        let item  = SuItemData.Instance.FromXIVId(log.ItemID |> int).Value.ToString()
         let str = sprintf "%s P:%i C:%i HQ:%b Buyer:%s" item log.Price log.Count log.IsHQ log.BuyerName
         sb.AppendLine(str) |> ignore
     sb.AppendLine("====TradeLogDataEnd====") |> ignore
