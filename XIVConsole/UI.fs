@@ -54,9 +54,16 @@ type MainForm () as this =
             x.TestAsync(title, queries)
 
     member private x.TestAsync (title, queries) = 
-        Threading.Tasks.Task.Run(new Action(fun () -> x.Test(title, queries))) |> ignore
+        let tp = new TabPage(title)
+        
+        Threading.Tasks.Task.Run(new Action(fun () -> 
+            x.Test(title, queries, tp)
+              )) |> ignore
 
-    member private x.Test (title, queries) = 
+        tabControl1.TabPages.Add(tp)
+        tabControl1.SelectedTab <- tp
+
+    member private x.Test (title, queries, tp) = 
         let list = new ListView(
                         View = View.Details,
                         FullRowSelect = true,
@@ -64,15 +71,12 @@ type MainForm () as this =
                         AllowColumnReorder = true,
                         MultiSelect   = true,
                         Dock          = DockStyle.Fill)
-
-        list.Columns.Add("Query").Width <- -2
-        list.Columns.Add("Item").Width <- -2
-        list.Columns.Add("Price").Width <- -2
-        list.Columns.Add("Count").Width <- -2
-        list.Columns.Add("Total").Width <- -2
-        list.Columns.Add("Last Update").Width <- -2
+        [| "Query"; "Item"; "Price"; "Count"; "Total"; "Last Update" |]
+        |> Array.iter (fun x -> list.Columns.Add(x).Width <- -2)
 
         let cutOff = 25
+
+        let buf = Collections.Generic.List<ListViewItem>()
         for q in queries do 
             try 
                 let ms = q.GetMaterials() |> Array.sortBy (fun (a, b) -> a.Item.XIVDbId)
@@ -97,16 +101,12 @@ type MainForm () as this =
                                 yield "--"
                                 yield "--"
                         |]
-                    list.Items.Add(new ListViewItem(arr)) |> ignore
+                    buf.Add(new ListViewItem(arr))
                 let sumUp = [| q.ToString(); "总计"; "--"; "--"; total.ToString(); "--" |]
-                list.Items.Add(new ListViewItem(sumUp)) |> ignore
+                buf.Add(new ListViewItem(sumUp))
             with 
             | Failure(msg) ->
                 let arr = [| q.ToString(); msg; "--"; "--"; "--"; "--" |]
-                list.Items.Add(new ListViewItem(arr)) |> ignore
-        let tp = new TabPage(title)
-        tp.Controls.Add(list)
-
-        tabControl1.Invoke(new Action(fun () -> 
-            tabControl1.TabPages.Add(tp)
-            tabControl1.SelectedTab <- tp)) |> ignore
+                buf.Add(new ListViewItem(arr))
+        list.Items.AddRange(buf.ToArray())
+        tp.Invoke(new Action(fun () -> tp.Controls.Add(list))) |> ignore
