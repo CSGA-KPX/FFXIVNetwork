@@ -31,7 +31,7 @@ let GetListView () =
                             yield header.Text
                     |]
                 sb.AppendLine(String.Join("\t", arr)) |> ignore
-                for item in list.Items do 
+                for item in list.SelectedItems do 
                     let arr = 
                         [|
                             for subitem in item.SubItems do 
