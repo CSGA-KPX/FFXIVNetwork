@@ -51,7 +51,10 @@ type MainForm () as this =
                     ("None", line.Split(',', '，') |> Array.map (Utils.Query.FromString))
                 else
                     (sp.[0], sp.[1].Split(',', '，') |> Array.map (Utils.Query.FromString))
-            x.Test(title, queries)
+            x.TestAsync(title, queries)
+
+    member private x.TestAsync (title, queries) = 
+        Threading.Tasks.Task.Run(new Action(fun () -> x.Test(title, queries))) |> ignore
 
     member private x.Test (title, queries) = 
         let list = new ListView(
@@ -103,5 +106,7 @@ type MainForm () as this =
                 list.Items.Add(new ListViewItem(arr)) |> ignore
         let tp = new TabPage(title)
         tp.Controls.Add(list)
-        tabControl1.TabPages.Add(tp)
-        tabControl1.SelectedTab <- tp
+
+        tabControl1.Invoke(new Action(fun () -> 
+            tabControl1.TabPages.Add(tp)
+            tabControl1.SelectedTab <- tp)) |> ignore
