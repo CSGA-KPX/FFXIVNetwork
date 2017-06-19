@@ -9,7 +9,7 @@ let   toJson = FsPickler.CreateJsonSerializer(false, true)
 let utf8   = new Text.UTF8Encoding(false)
 let dataUrl itemId = sprintf "https://xiv.danmaku.org/order/%i" itemId
 
-let getClient() =
+let client =
     let client  = new HttpClient()
     client.DefaultRequestHeaders.Accept.Clear()
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"))
@@ -17,7 +17,6 @@ let getClient() =
 
 let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) = 
     let itemId = ra.[0].Itemid |> int
-    let client = getClient()
     let json   = toJson.PickleToString(ra)
     let content= new StringContent(json, utf8, "application/json")
     let task = client.PostAsync(dataUrl itemId, content)
@@ -29,20 +28,22 @@ let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) =
 type MarketFetchResult = 
     {
         Records : LibFFXIV.SpecializedPacket.MarketRecord [] option
-        Item    : LibFFXIV.Database.SuItemRecord
+        Item    : LibFFXIV.Database.ItemRecord
         Success : bool
         Status  : string
         Updated : string
     }
 
-let FetchMarketData(item : LibFFXIV.Database.SuItemRecord) =
-    let client = getClient()
+let FetchMarketData(item : LibFFXIV.Database.ItemRecord) =
     let res    = client.GetAsync(dataUrl (item.XIVDbId)).Result
     let resp   = res.Content.ReadAsStringAsync().Result
     let update = 
         let v = res.Content.Headers.LastModified
         if v.HasValue then
-            v.Value.ToLocalTime().ToString()
+            let t = v.Value.ToLocalTime()
+            let now = DateTimeOffset.Now
+            let diff = now - t
+            sprintf "%3i天%2i时%2i分前" (diff.Days) (diff.Hours) (diff.Minutes)
         else
             "N/A"
 

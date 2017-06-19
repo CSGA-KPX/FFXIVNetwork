@@ -1,58 +1,82 @@
 ﻿module Utils
 open System
 
-type Query = 
-    | Item         of string
-    | Materials    of string
-    | MaterialsRec of string
+type DisplayOP = 
+    | Query  of string * LibFFXIV.Database.ItemRecord * float
+    | Result of string * LibXIVDMF.Market.MarketFetchResult * float
+    | BeginSum
+    | EndSum of string
+    | EmptyLine
 
-    member x.TryGetItem() = 
-        let str = 
-            match x with 
-            | Item         x -> x
-            | Materials    x -> x
-            | MaterialsRec x -> x
-        let ip = LibFFXIV.Database.ItemProvider
-        let name = lazy (ip.FromName(str))
-        let lode = lazy (ip.FromLodeId(str))
-    
-        if   name.Value.IsSome then
-            Some name.Value.Value
-        elif lode.Value.IsSome then
-            Some lode.Value.Value
-        else
-            None
+    member x.Fetch() = 
+        match x with
+        | Query (str, item, count) -> 
+            let market = LibXIVDMF.Market.FetchMarketData(item)
+            Result (str, market, count)
+        | _ -> x
 
-    member x.GetMaterials() = 
-        let item = x.TryGetItem()
-        if item.IsNone then
-            failwithf "找不到物品%A" x
-        else
-            let item = item.Value
-            match x with 
-            | Item         x ->
-                [| LibXIVDMF.Market.FetchMarketData(item) , 1.0 |]
-            | Materials    x ->
-                let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item.LodestoneId)
-                if recipe.IsSome then
-                    let test = recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count)
-                    [| yield! recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count) |]
-                else
-                    failwithf "找不到配方:%A" x
-            | MaterialsRec x ->
-                let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item.LodestoneId)
-                if recipe.IsSome then
-                    [| yield! recipe.Value |> Array.map (fun (item, count) -> LibXIVDMF.Market.FetchMarketData(item), count) |]
-                else
-                    failwithf "找不到配方:%A" x
+type StringQuery = 
+    | Item              of string
+    | Materials         of string
+    | MaterialsRec      of string
+    | MaterialsRecGroup of string
+
 
     static member FromString(q : string) = 
         if   q.StartsWith("!!") then
             MaterialsRec q.[2..] 
         elif q.StartsWith("!" ) then
             Materials    q.[1..]
+        elif q.StartsWith("#") then
+            MaterialsRecGroup  q.[1..]
         else
             Item q
+
+    member x.Name = 
+        match x with 
+        | Item              x -> x
+        | Materials         x -> x
+        | MaterialsRec      x -> x
+        | MaterialsRecGroup x -> x
+
+    member x.GetOP() = 
+        let item = LibFFXIV.Database.ItemProvider.TryGetItem(x.Name)
+        if item.IsNone then
+            failwithf "找不到物品%A" x
+        else
+            let item = item.Value
+            [|
+                match x with
+                | Item         x ->
+                    yield Query (x.ToString() ,item, 1.0)
+                | Materials    x ->
+                    let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item)
+                    let qn = x.ToString()
+                    yield BeginSum
+                    for (a, b) in ma do
+                        yield Query (qn, a, b)
+                    yield EndSum (x.ToString())
+                | MaterialsRec x ->
+                    let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item)
+                    let qn = x.ToString()
+                    yield BeginSum
+                    for (a, b) in ma do
+                        yield Query (qn, a, b)
+                    yield EndSum (x.ToString())
+                | MaterialsRecGroup x ->
+                    let maa = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRecGroup(item)
+                    for (level, ma) in maa do 
+                        if ma.Length = 1 then
+                            let (i, c) = ma.[0]
+                            yield Query (level, i, c)
+                        else
+                            yield BeginSum
+                            for (i, c) in ma do 
+                                yield Query (level, i, c)
+                            yield EndSum (level)
+                            yield EmptyLine
+                yield EmptyLine
+            |]
 
 let internal TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
     [|

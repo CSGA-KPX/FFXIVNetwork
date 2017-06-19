@@ -89,9 +89,9 @@ type MainForm () as this =
             let (title, queries) = 
                 let sp = line.Split(':', '：')
                 if sp.Length <= 1 then
-                    ("None", line.Split(',', '，') |> Array.map (Utils.Query.FromString))
+                    ("None", line.Split(',', '，') |> Array.map (Utils.StringQuery.FromString))
                 else
-                    (sp.[0], sp.[1].Split(',', '，') |> Array.map (Utils.Query.FromString))
+                    (sp.[0], sp.[1].Split(',', '，') |> Array.map (Utils.StringQuery.FromString))
             x.TestAsync(title, queries)
 
     member private x.TestAsync (title, queries) = 
@@ -106,40 +106,52 @@ type MainForm () as this =
 
     member private x.Test (title, queries, tp) = 
         let list = GetListView()
-
-        let cutOff = 25
-
         let buf = Collections.Generic.List<ListViewItem>()
+        let addList query iname std count total update = 
+            buf.Add(new ListViewItem([| query; iname; std; count; total; update |]))
+
+        //先把文本查询转换好
+        let queries = 
+            queries
+            |> Array.map (fun x -> x.GetOP())
+            |> Array.map (fun arr -> 
+                arr |> Array.Parallel.map (fun x -> x.Fetch()))
+
+        let mutable sum = Utils.StdEv.Zero
+        let cutOff = 25
         for q in queries do 
-            try 
-                let ms = q.GetMaterials() |> Array.sortBy (fun (a, b) -> a.Item.XIVDbId)
-                let mutable total = Utils.StdEv.Zero
-                for (res, count) in ms do 
-                    let arr = 
-                        [|
-                            if res.Success then
-                                let std =  Utils.GetStdEv(res.Records.Value, cutOff)
-                                total <- total + (std * count)
-                                yield q.ToString()
-                                yield res.Item.GetName()
-                                yield std.ToString()
-                                yield String.Format("{0:0.###}", count)
-                                yield (std * count).ToString()
-                                yield res.Updated
-                            else
-                                yield q.ToString()
-                                yield res.Item.GetName()
-                                yield "暂缺"
-                                yield String.Format("{0:0.###}", count)
-                                yield "--"
-                                yield "--"
-                        |]
-                    buf.Add(new ListViewItem(arr))
-                let sumUp = [| q.ToString(); "总计"; "--"; "--"; total.ToString(); "--" |]
-                buf.Add(new ListViewItem(sumUp))
-            with 
-            | Failure(msg) ->
-                let arr = [| q.ToString(); msg; "--"; "--"; "--"; "--" |]
-                buf.Add(new ListViewItem(arr))
+            for op in q do 
+                match op with
+                | Utils.DisplayOP.EmptyLine ->
+                    addList "" "" "" "" "" ""
+                | Utils.DisplayOP.BeginSum  -> sum <- Utils.StdEv.Zero
+                | Utils.DisplayOP.Result (name, res, count) when res.Success ->
+                    let std = Utils.GetStdEv(res.Records.Value, cutOff)
+                    let total = (std * count)
+                    sum <- sum + total
+                    addList
+                        name
+                        (res.Item.GetName())
+                        (std.ToString())
+                        (String.Format("{0:0.###}", count))
+                        (total.ToString())
+                        res.Updated
+                | Utils.DisplayOP.Result (name, res, count) when not res.Success ->
+                    addList
+                        name
+                        (res.Item.GetName())
+                        "暂缺"
+                        (String.Format("{0:0.###}", count))
+                        "--"
+                        "--"
+                | Utils.DisplayOP.EndSum name -> 
+                    addList
+                        name
+                        "总计"
+                        "--"
+                        "--"
+                        (sum.ToString())
+                        "--"
+                | _ -> ()
         list.Items.AddRange(buf.ToArray())
         tp.Invoke(new Action(fun () -> tp.Controls.Add(list))) |> ignore

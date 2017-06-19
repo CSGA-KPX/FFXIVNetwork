@@ -31,21 +31,10 @@ let PacketTester() =
     |> Seq.iter (printfn "Queued key : %A")
     //printfn "Queued count : %A" (queue.GetQueuedKeys())
     
-let QueryRecipe(lodeId : string) = 
-    let recipe = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials("fddfe1ebdbc")
-    if (recipe.IsSome) then
-        
-        ()
-    else
-        printfn "找不到配方"
-    ()
 
 [<EntryPoint>]
 let main argv = 
     M()
-    //PacketTester()
-    //printfn  "%A" (LibXIVDMF.Market.FetchMarketData(4))
-    //printfn  "Test %A" (LibFFXIV.Database.ItemProvider.FromName("金币"))
     Console.ReadLine() |> ignore
 
 
