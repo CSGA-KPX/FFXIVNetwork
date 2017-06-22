@@ -10,7 +10,7 @@ let M () =
 
 let PacketTester() = 
     let random = new Random()
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\看市场，水晶页\LoggingRawTCPPacket.txt"
+    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\新建文件夹\LoggingRawTCPPacket.txt_"
     let lines    = IO.File.ReadAllLines(testFile)
     lines
     |> Array.map (fun x -> x.[50 ..])
@@ -34,7 +34,12 @@ let PacketTester() =
 
 [<EntryPoint>]
 let main argv = 
+    AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 
+        let e = args.ExceptionObject :?> Exception
+        NLog.LogManager.GetCurrentClassLogger().Fatal("UnhandledException:{0}", e.ToString())
+    )
     M()
+    //PacketTester()
     Console.ReadLine() |> ignore
 
 
