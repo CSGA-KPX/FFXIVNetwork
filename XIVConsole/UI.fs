@@ -39,7 +39,8 @@ let GetListView () =
                         |]
                     sb.AppendLine(String.Join("\t", arr)) |> ignore
                 Clipboard.SetText(sb.ToString())
-            | _ -> ()
+            | _ ->
+                e.SuppressKeyPress <- false
     list.KeyDown.Add(keydown)
     list
 
@@ -67,6 +68,10 @@ type MainForm () as this =
         tabControl1.SelectedIndex <- 0;
         tabControl1.Size <- new System.Drawing.Size(715, 368);
         tabControl1.TabIndex <- 1;
+        tabControl1.KeyDown.Add(fun e ->
+            if e.Control && (e.KeyCode = Keys.X) && not (isNull tabControl1.SelectedTab) then
+                tabControl1.TabPages.Remove(tabControl1.SelectedTab)
+        )
         // 
         // Form1
         // 
@@ -85,7 +90,9 @@ type MainForm () as this =
         // 查询名: !a,!b,!c 查配方
         // 查询名: !!a, !!b, !!c 查完整配方
         if e.KeyCode = Keys.Enter then
-            let line = textBox1.Text
+            let line = 
+                textBox1.Text.Replace(" ", String.Empty).Replace("\t", String.Empty)
+                    .Replace('！', '!')
             let (title, queries) = 
                 let sp = line.Split(':', '：')
                 if sp.Length <= 1 then

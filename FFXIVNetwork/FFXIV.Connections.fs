@@ -21,15 +21,35 @@ let internal getXIVConnections() =
 module ServerIP = 
     let infoLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion)
     let mutable serverIP = ""
-    let mutable lastRefreshTime : DateTime = DateTime.Now
+    let mutable clientIP = ""
+    let mutable lastRefreshTimeClient : DateTime = DateTime.Now
+    let mutable lastRefreshTimeServer : DateTime = DateTime.Now
     let isExpried () = 
         let Timer = 10
         let A = String.IsNullOrEmpty(serverIP)
-        let B = (DateTime.Now - lastRefreshTime).Seconds > Timer
+        let B = (DateTime.Now - lastRefreshTimeServer).Seconds > Timer
         A || B
 
+    let GetClient() = 
+        infoLock.EnterUpgradeableReadLock()
+        if isExpried() then
+            let cons = 
+                getXIVConnections()
+                |> Array.map (fun x -> x.LocalEndPoint.Address.ToString())
+                |> Seq.ofArray
+                |> Seq.distinct
+            if (Seq.length cons) = 0 then
+                None
+            else
+                infoLock.EnterWriteLock()
+                clientIP <- Seq.head cons
+                lastRefreshTimeClient <- DateTime.Now
+                infoLock.ExitWriteLock()
+                Some(clientIP)
+        else
+            Some(clientIP)
 
-    let Get() = 
+    let GetServer() = 
         infoLock.EnterUpgradeableReadLock()
         if isExpried() then
             let cons = 
@@ -42,7 +62,7 @@ module ServerIP =
             else
                 infoLock.EnterWriteLock()
                 serverIP <- Seq.head cons
-                lastRefreshTime <- DateTime.Now
+                lastRefreshTimeServer <- DateTime.Now
                 infoLock.ExitWriteLock()
                 Some(serverIP)
         else

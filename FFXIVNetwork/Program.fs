@@ -3,7 +3,7 @@ open PCap
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let M () = 
-    while FFXIV.Connections.ServerIP.Get().IsNone do
+    while FFXIV.Connections.ServerIP.GetServer().IsNone do
         logger.Info("没找到游戏连接，10秒后重试")
         Threading.Thread.Sleep(10 * 1000)
     PCap.Start()
@@ -26,22 +26,23 @@ let PacketTester() =
         }
         )
     //|> Array.sortBy (fun _ -> random.Next())
-    |> Array.iter (fun x -> queue.Enqueue(x))
-    queue.GetQueuedKeys()
+    |> Array.iter (fun x -> incomePacketQueue.Enqueue(x))
+    incomePacketQueue.GetQueuedKeys()
     |> Seq.iter (printfn "Queued key : %A")
     //printfn "Queued count : %A" (queue.GetQueuedKeys())
     
 
 [<EntryPoint>]
 let main argv = 
+    PcapDotNet.Core.LivePacketDevice.AllLocalMachine.Count |> ignore
     AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 
         let e = args.ExceptionObject :?> Exception
         NLog.LogManager.GetCurrentClassLogger().Fatal("UnhandledException:{0}", e.ToString())
     )
-    M()
-    //PacketTester()
-    Console.ReadLine() |> ignore
 
+    M()
+    while true do 
+        Console.ReadLine() |> ignore
 
     0 // 返回整数退出代码
     
