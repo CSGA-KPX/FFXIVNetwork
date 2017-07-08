@@ -72,15 +72,20 @@ let MarketListHandler (idx, gp : FFXIVGamePacket) =
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let PacketHandler (bytes : byte []) = 
-    let packet = FFXIVBasePacket.ParseFromBytes(bytes)
-    let spCount= packet.SubPackets.Length - 1
-    packet.SubPackets
-    |> Array.iteri (fun idx sp ->
-        if sp.Type = 0x0003us then
-            let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
-            AllPacketHandler(idx ,spCount , gp)
-            match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
-            | Opcodes.Market -> MarketPacketHandler2(idx, gp)
-            | Opcodes.TradeLog -> TradeLogPacketHandler(idx, gp)
-            | Opcodes.MarketList -> MarketListHandler(idx, gp)
-            | _ -> ()) // UnknownPacketHandler(idx ,spCount , gp))
+    try
+        let packet = FFXIVBasePacket.ParseFromBytes(bytes)
+        let spCount= packet.SubPackets.Length - 1
+        packet.SubPackets
+        |> Array.iteri (fun idx sp ->
+            if sp.Type = 0x0003us then
+                let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
+                AllPacketHandler(idx ,spCount , gp)
+                match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
+                | Opcodes.Market -> MarketPacketHandler2(idx, gp)
+                | Opcodes.TradeLog -> TradeLogPacketHandler(idx, gp)
+                | Opcodes.MarketList -> MarketListHandler(idx, gp)
+                | _ -> ()) // UnknownPacketHandler(idx ,spCount , gp))
+    with
+    | e ->  
+        NLog.LogManager.GetCurrentClassLogger().Error("Error packet:{0}", Utils.HexString.ToHex(bytes))
+        reraise()

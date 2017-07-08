@@ -93,12 +93,22 @@ let Start() =
 
     let device = devices |> Array.tryHead
     if device.IsSome then
-        using (device.Value.Open(65536, PacketDeviceOpenAttributes.Promiscuous, 1000)) (fun communicator ->
-            if communicator.DataLink.Kind <> DataLinkKind.Ethernet then
-                failwithf "This program works only on Ethernet networks."
-            using (communicator.CreateFilter("ip and tcp")) (fun filter -> communicator.SetFilter(filter))
-            communicator.ReceivePackets(0, new HandlePacket (PacketHandler)) |> ignore
-        )
+        use communicator = device.Value.Open(65536, PacketDeviceOpenAttributes.Promiscuous, 1000)
+        if communicator.DataLink.Kind <> DataLinkKind.Ethernet then
+            failwithf "This program works only on Ethernet networks."
+        communicator.SetFilter(communicator.CreateFilter("ip and tcp"))
+        try
+            while true do 
+                let (result, packet) = communicator.ReceivePacket()
+                match result with
+                | PacketCommunicatorReceiveResult.Timeout -> ()
+                | PacketCommunicatorReceiveResult.Ok ->PacketHandler(packet)
+                | _ ->
+                    RawPacketLogger.Error("包捕获异常（无视）")
+
+        with
+        | e -> 
+            RawPacketLogger.Fatal(e, "包捕获异常终止")
     else
         failwith "检测不到适合的适配器，请检查WinPcap等是否正确安装"
     

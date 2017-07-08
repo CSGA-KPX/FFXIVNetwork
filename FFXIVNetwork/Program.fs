@@ -10,7 +10,7 @@ let M () =
 
 let PacketTester() = 
     let random = new Random()
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\新建文件夹\LoggingRawTCPPacket.txt_"
+    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\LoggingRawTCPPacket.txt_"
     let lines    = IO.File.ReadAllLines(testFile)
     lines
     |> Array.map (fun x -> x.[50 ..])
@@ -25,15 +25,16 @@ let PacketTester() =
             LibFFXIV.TcpPacket.Data    = Utils.HexString.ToBytes(dat)
         }
         )
-    //|> Array.sortBy (fun _ -> random.Next())
     |> Array.iter (fun x -> incomePacketQueue.Enqueue(x))
     incomePacketQueue.GetQueuedKeys()
     |> Seq.iter (printfn "Queued key : %A")
-    //printfn "Queued count : %A" (queue.GetQueuedKeys())
+    printfn "Queued count : %A" (incomePacketQueue.GetQueuedKeys())
     
 
 [<EntryPoint>]
 let main argv = 
+    
+    
     PcapDotNet.Core.LivePacketDevice.AllLocalMachine.Count |> ignore
     AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 
         let e = args.ExceptionObject :?> Exception
@@ -41,8 +42,8 @@ let main argv =
     )
 
     M()
+    //PacketTester()
     while true do 
         Console.ReadLine() |> ignore
-
     0 // 返回整数退出代码
     
