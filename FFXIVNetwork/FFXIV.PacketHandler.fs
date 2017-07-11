@@ -10,15 +10,18 @@ let tester (ra : MarketRecord []) =
     let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
     
     for data in ra do
+        let i = SuItemData.Instance.FromXIVId(data.Itemid |> int)
         let date  = LibFFXIV.Utils.TimeStamp.FromSeconds(data.TimeStamp)
         let price = data.Price
         let count = data.Count
-        let item  = SuItemData.Instance.FromXIVId(data.Itemid |> int).Value.ToString()
-        //let item  = LibFFXIV.Database.XIVItemDict.[data.Itemid |> int].ToString()
         let isHQ  = data.IsHQ
         let meld  = data.MeldCount
-        let str = sprintf "%O %s P:%i C:%i HQ:%b Meld:%i Seller:%s" date item price count isHQ meld (data.Name)
-        sb.AppendLine(str) |> ignore
+        let str = 
+            if i.IsSome then
+                i.Value.ToString()
+            else
+                sprintf "未知物品 XIVId(%i)" data.Itemid
+        sb.AppendLine(sprintf "%O %s P:%i C:%i HQ:%b Meld:%i Seller:%s" date str price count isHQ meld (data.Name)) |> ignore
     sb.AppendLine("====MarketDataEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
@@ -40,9 +43,14 @@ let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) =
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
     for log in tradeLogs.Records do
-        let item  = SuItemData.Instance.FromXIVId(log.ItemID |> int).Value.ToString()
+        let i     = SuItemData.Instance.FromXIVId(log.ItemID |> int)
+        let iName = 
+            if i.IsSome then
+                i.Value.ToString()
+            else
+                sprintf "未知物品 XIVId(%i)" log.ItemID
         let date  = LibFFXIV.Utils.TimeStamp.FromSeconds(log.TimeStamp)
-        let str = sprintf "%O %s P:%i C:%i HQ:%b Buyer:%s" date item log.Price log.Count log.IsHQ log.BuyerName
+        let str = sprintf "%O %s P:%i C:%i HQ:%b Buyer:%s" date iName log.Price log.Count log.IsHQ log.BuyerName
         sb.AppendLine(str) |> ignore
     sb.AppendLine("====TradeLogDataEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
@@ -64,8 +72,13 @@ let MarketListHandler (idx, gp : FFXIVGamePacket) =
     let sb = new StringBuilder("====MarketList====\r\n")
     let mlp= MarketListPacket.FromBytes(gp.Data)
     for d in mlp.Records do 
-        let item = ItemProvider.FromXIVId(d.ItemId |>int).Value
-        sb.AppendFormat("物品:{0} 订单数:{1} 需求{2}\r\n", item, d.Count, d.Demand) |> ignore
+        let item = ItemProvider.FromXIVId(d.ItemId |>int)
+        let iName = 
+            if item.IsSome then
+                item.Value.ToString()
+            else
+                sprintf "未知物品 XIVId(%i)" d.ItemId
+        sb.AppendFormat("物品:{0} 订单数:{1} 需求{2}\r\n", iName, d.Count, d.Demand) |> ignore
     sb.AppendLine("====MarketListEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 

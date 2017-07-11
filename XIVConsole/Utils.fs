@@ -58,6 +58,8 @@ type StringQuery =
                     yield EndSum (x.ToString())
                 | MaterialsRec x ->
                     let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item)
+                    let ma = ma |> Array.sortBy (fun (item, count) -> item.XIVDbId)
+
                     let qn = x.ToString()
                     yield BeginSum
                     for (a, b) in ma do

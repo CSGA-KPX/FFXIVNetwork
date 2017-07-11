@@ -6,7 +6,11 @@ let M () =
     while FFXIV.Connections.ServerIP.GetServer().IsNone do
         logger.Info("没找到游戏连接，10秒后重试")
         Threading.Thread.Sleep(10 * 1000)
-    PCap.Start()
+    let ip = FFXIV.Connections.ServerIP.GetServer().Value
+    if  ip = "116.211.8.43" || ip = "116.211.8.20" then
+        PCap.Start()
+    else
+        logger.Fatal("服务器IP错误，本应用仅限拉诺西亚使用{0}", FFXIV.Connections.ServerIP.GetServer().Value)
 
 let PacketTester() = 
     let random = new Random()
