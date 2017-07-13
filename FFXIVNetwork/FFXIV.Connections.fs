@@ -32,38 +32,46 @@ module ServerIP =
 
     let GetClient() = 
         infoLock.EnterUpgradeableReadLock()
-        if isExpried() then
-            let cons = 
-                getXIVConnections()
-                |> Array.map (fun x -> x.LocalEndPoint.Address.ToString())
-                |> Seq.ofArray
-                |> Seq.distinct
-            if (Seq.length cons) = 0 then
-                None
+        let ret = 
+            if clientIP = "" || isExpried() then
+                let cons = 
+                    getXIVConnections()
+                    |> Array.map (fun x -> x.LocalEndPoint.Address.ToString())
+                    |> Seq.ofArray
+                    |> Seq.distinct
+                if (Seq.length cons) = 0 then
+                    None
+                else
+                    infoLock.EnterWriteLock()
+                    clientIP <- Seq.head cons
+                    lastRefreshTimeClient <- DateTime.Now
+                    infoLock.ExitWriteLock()
+                    Some(clientIP)
             else
-                infoLock.EnterWriteLock()
-                clientIP <- Seq.head cons
-                lastRefreshTimeClient <- DateTime.Now
-                infoLock.ExitWriteLock()
                 Some(clientIP)
-        else
-            Some(clientIP)
+        infoLock.ExitUpgradeableReadLock()
+        ret
+        
 
     let GetServer() = 
         infoLock.EnterUpgradeableReadLock()
-        if isExpried() then
-            let cons = 
-                getXIVConnections()
-                |> Array.map (fun x -> x.RemoteEndPoint.Address.ToString())
-                |> Seq.ofArray
-                |> Seq.distinct
-            if (Seq.length cons) = 0 then
-                None
+        let ret = 
+            if isExpried() then
+                let cons = 
+                    getXIVConnections()
+                    |> Array.map (fun x -> x.RemoteEndPoint.Address.ToString())
+                    |> Seq.ofArray
+                    |> Seq.distinct
+                if (Seq.length cons) = 0 then
+                    None
+                else
+                    infoLock.EnterWriteLock()
+                    serverIP <- Seq.head cons
+                    lastRefreshTimeServer <- DateTime.Now
+                    infoLock.ExitWriteLock()
+                    Some(serverIP)
             else
-                infoLock.EnterWriteLock()
-                serverIP <- Seq.head cons
-                lastRefreshTimeServer <- DateTime.Now
-                infoLock.ExitWriteLock()
                 Some(serverIP)
-        else
-            Some(serverIP)
+        infoLock.ExitUpgradeableReadLock()
+        ret
+

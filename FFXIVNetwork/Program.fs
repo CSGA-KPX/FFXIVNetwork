@@ -2,13 +2,16 @@
 open PCap
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
-let M () = 
+let Start() = 
     while FFXIV.Connections.ServerIP.GetServer().IsNone do
         logger.Info("没找到游戏连接，10秒后重试")
         Threading.Thread.Sleep(10 * 1000)
     let ip = FFXIV.Connections.ServerIP.GetServer().Value
     if  ip = "116.211.8.43" || ip = "116.211.8.20" then
-        PCap.Start()
+        if PCap.IsAvailable() then
+            PCap.Start()
+        else
+            Winsock.Start()
     else
         logger.Fatal("服务器IP错误，本应用仅限拉诺西亚使用{0}", FFXIV.Connections.ServerIP.GetServer().Value)
 
@@ -29,25 +32,23 @@ let PacketTester() =
             LibFFXIV.TcpPacket.Data    = Utils.HexString.ToBytes(dat)
         }
         )
-    |> Array.iter (fun x -> incomePacketQueue.Enqueue(x))
-    incomePacketQueue.GetQueuedKeys()
+    |> Array.iter (fun x -> PacketHandler.incomePacketQueue.Enqueue(x))
+    PacketHandler.incomePacketQueue.GetQueuedKeys()
     |> Seq.iter (printfn "Queued key : %A")
-    printfn "Queued count : %A" (incomePacketQueue.GetQueuedKeys())
+    printfn "Queued count : %A" (PacketHandler.incomePacketQueue.GetQueuedKeys())
     
 
 [<EntryPoint>]
 let main argv = 
-    
-    
-    PcapDotNet.Core.LivePacketDevice.AllLocalMachine.Count |> ignore
     AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 
         let e = args.ExceptionObject :?> Exception
         NLog.LogManager.GetCurrentClassLogger().Fatal("UnhandledException:{0}", e.ToString())
     )
-
-    M()
-    //PacketTester()
+    try
+        Start()
+    with
+    | e -> printfn "%s" (e.ToString())
     while true do 
         Console.ReadLine() |> ignore
-    0 // 返回整数退出代码
+    0
     
