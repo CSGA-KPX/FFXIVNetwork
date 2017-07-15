@@ -81,7 +81,7 @@
     <Compile Include="Utils.fs" />
     <Compile Include="FFXIV.Connections.fs" />
     <Compile Include="FFXIV.PacketHandler.fs" />
-    <Compile Include="PacketHandler.fs" />
+    <Compile Include="RawPacketHandler.fs" />
     <Compile Include="PCap.fs" />
     <Compile Include="Winsock.fs" />
     <Compile Include="Program.fs" />
@@ -132,6 +132,17 @@
       <Project>{8a3c2b67-647d-431a-9ac1-7695667b0de7}</Project>
       <Private>True</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="NetFwTypeLib">
+      <Guid>{58fbcf7c-e7a9-467c-80b3-fc65e8fcca08}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <Isolated>False</Isolated>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Private>True</Private>
+    </COMReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,7 +1,6 @@
-﻿module PacketHandler
+﻿module RawPacketHandler
 open LibFFXIV.Constants
 open LibFFXIV.TcpPacket
-open SharpPcap
 open PacketDotNet
 
 let RawPacketLogger = NLog.LogManager.GetLogger("RawTCPPacket")
@@ -24,12 +23,8 @@ let isGameBasePacket(tcp : TcpPacket) =
         false
     else 
         let payload     = tcp.PayloadData
-        let first16Byte = tcp.PayloadData.[0..15]
-        let first16Str  = Utils.HexString.ToHex(first16Byte).ToUpper() 
-        if (len <= 32) || (first16Str <> FFXIVBasePacketMagicAlt) then
-            true
-        else
-            false  
+        let first16Str  = lazy (Utils.HexString.ToHex(tcp.PayloadData.[0..15]).ToUpper() )
+        (len <= 32) || (first16Str.Value <> FFXIVBasePacketMagicAlt)
 
 
 let PacketHandler (p:TcpPacket) = 
@@ -61,7 +56,6 @@ let PacketHandler (p:TcpPacket) =
             })
     | Outcome when isGameBasePacket(tcp) ->
         let data = tcp.PayloadData
-        printfn "%s" (data |> Utils.HexString.ToHex)
         RawPacketLogger.Trace(sprintf ">>>>>>%i,%i,%s" (seqNum) (nsqNum) (data |> Utils.HexString.ToHex))
         outcomePacketQueue.Enqueue(
             {

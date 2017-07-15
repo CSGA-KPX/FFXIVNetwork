@@ -3,6 +3,7 @@ open PCap
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let Start() = 
+    Winsock.Start()
     while FFXIV.Connections.ServerIP.GetServer().IsNone do
         logger.Info("没找到游戏连接，10秒后重试")
         Threading.Thread.Sleep(10 * 1000)
@@ -32,18 +33,21 @@ let PacketTester() =
             LibFFXIV.TcpPacket.Data    = Utils.HexString.ToBytes(dat)
         }
         )
-    |> Array.iter (fun x -> PacketHandler.incomePacketQueue.Enqueue(x))
-    PacketHandler.incomePacketQueue.GetQueuedKeys()
+    |> Array.iter (fun x -> RawPacketHandler.incomePacketQueue.Enqueue(x))
+    RawPacketHandler.incomePacketQueue.GetQueuedKeys()
     |> Seq.iter (printfn "Queued key : %A")
-    printfn "Queued count : %A" (PacketHandler.incomePacketQueue.GetQueuedKeys())
+    printfn "Queued count : %A" (RawPacketHandler.incomePacketQueue.GetQueuedKeys())
     
 
 [<EntryPoint>]
 let main argv = 
     AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 
         let e = args.ExceptionObject :?> Exception
-        NLog.LogManager.GetCurrentClassLogger().Fatal("UnhandledException:{0}", e.ToString())
+        logger.Fatal("UnhandledException:{0}", e.ToString())
     )
+    logger.Info("正在加载数据")
+    LibFFXIV.Database.ItemProvider |> ignore
+    logger.Info("数据加载结束")
     try
         Start()
     with

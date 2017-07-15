@@ -3,6 +3,7 @@ open System
 open System.Net
 open System.Net.Sockets
 open PacketDotNet
+open NetFwTypeLib
 
 module UAC = 
     open System
@@ -44,7 +45,7 @@ let StartSocketSniff() =
             if data.[9] = 6uy then
                 let  p = Packet.ParsePacket(LinkLayers.Raw, data)
                 let tcp = p.Extract(typeof<TcpPacket>) :?> TcpPacket
-                PacketHandler.PacketHandler(tcp)
+                RawPacketHandler.PacketHandler(tcp)
     with
     | e -> printfn "%s" (e.ToString())
     ()
@@ -52,11 +53,24 @@ let StartSocketSniff() =
 let IsAvailable () = 
     UAC.IsAdministrator()
 
+
+let CheckFirewallStatus () = 
+    let mgr = 
+        let t = Type.GetTypeFromProgID("HNetCfg.FwMgr", false)
+        Activator.CreateInstance(t) :?> INetFwMgr
+    let appList = mgr.LocalPolicy.CurrentProfile.AuthorizedApplications
+    printfn ">%s<" (Diagnostics.Process.GetCurrentProcess().MainModule.FileName)
+    
+    for app in appList do 
+        let app = app :?> INetFwAuthorizedApplication
+        printfn "%s" app.ProcessImageFileName
+    
 let Start () = 
     if IsAvailable() then
         NLog.LogManager.GetCurrentClassLogger().Info("开始使用RawSocket抓包，请确定已添加防火墙例外")
         StartSocketSniff()
     else
+        CheckFirewallStatus()
         NLog.LogManager.GetCurrentClassLogger().Info("RawSocket抓包需要提升权限，请按任意键继续")
         Console.ReadKey(true) |> ignore
         UAC.RestartWithUAC()

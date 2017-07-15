@@ -37,11 +37,11 @@ let Start() =
                 else
                     let packet    = Packet.ParsePacket(rawpacket.LinkLayerType, rawpacket.Data)
                     let tcpPacket = packet.Extract(typeof<TcpPacket>) :?> TcpPacket
-                    PacketHandler.PacketHandler(tcpPacket)
+                    RawPacketHandler.PacketHandler(tcpPacket)
         with
         | e -> 
             printfn "%O" e
-            PacketHandler.RawPacketLogger.Fatal(e, "包捕获异常终止")
+            RawPacketHandler.RawPacketLogger.Fatal(e, "包捕获异常终止")
         device.Close()
     else
         failwith "检测不到适合的适配器，请检查WinPcap等是否正确安装"
