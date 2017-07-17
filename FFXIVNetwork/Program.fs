@@ -1,43 +1,11 @@
 ﻿open System
-open PCap
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let Start() = 
-    Winsock.Start()
-    while FFXIV.Connections.ServerIP.GetServer().IsNone do
-        logger.Info("没找到游戏连接，10秒后重试")
-        Threading.Thread.Sleep(10 * 1000)
-    let ip = FFXIV.Connections.ServerIP.GetServer().Value
-    if  ip = "116.211.8.43" || ip = "116.211.8.20" then
-        if PCap.IsAvailable() then
-            PCap.Start()
-        else
-            Winsock.Start()
+    if RawPacketSource.PCap.IsAvailable() then
+        RawPacketSource.PCap.Start()
     else
-        logger.Fatal("服务器IP错误，本应用仅限拉诺西亚使用{0}", FFXIV.Connections.ServerIP.GetServer().Value)
-
-let PacketTester() = 
-    let random = new Random()
-    let testFile = @"Z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\FFXIVNetwork\bin\Debug\LoggingRawTCPPacket.txt_"
-    let lines    = IO.File.ReadAllLines(testFile)
-    lines
-    |> Array.map (fun x -> x.[50 ..])
-    |> Array.map (fun x -> 
-        let arr = x.Split(',')
-        let seq = UInt32.Parse(arr.[0])
-        let nsq = UInt32.Parse(arr.[1])
-        let dat = arr.[2]
-        {
-            LibFFXIV.TcpPacket.SeqNum  = seq
-            LibFFXIV.TcpPacket.NextSeq = nsq
-            LibFFXIV.TcpPacket.Data    = Utils.HexString.ToBytes(dat)
-        }
-        )
-    |> Array.iter (fun x -> RawPacketHandler.incomePacketQueue.Enqueue(x))
-    RawPacketHandler.incomePacketQueue.GetQueuedKeys()
-    |> Seq.iter (printfn "Queued key : %A")
-    printfn "Queued count : %A" (RawPacketHandler.incomePacketQueue.GetQueuedKeys())
-    
+        RawPacketSource.Winsock.Start()
 
 [<EntryPoint>]
 let main argv = 
@@ -47,8 +15,12 @@ let main argv =
     )
     logger.Info("正在加载数据")
     LibFFXIV.Database.ItemProvider |> ignore
+    Utils.LobbyServerIP |> ignore
+    //一些预定义的数据
+
     logger.Info("数据加载结束")
     try
+        Utils.LocalIPAddress |> ignore
         Start()
     with
     | e -> printfn "%s" (e.ToString())

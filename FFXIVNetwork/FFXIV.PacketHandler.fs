@@ -1,10 +1,14 @@
 ﻿module FFXIV.PacketHandler
 open System
 open System.Text
+open System.Security.Cryptography
+open System.IO
 open LibFFXIV.Constants
-open LibFFXIV.GeneralPacket
+open LibFFXIV.BasePacket
 open LibFFXIV.SpecializedPacket
 open LibFFXIV.Database
+
+let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let tester (ra : MarketRecord []) = 
     let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
@@ -35,11 +39,11 @@ let marketQueue =
     i.NewCompleteDataEvent.Add(submitData)
     i
 
-let MarketPacketHandler2 (idx : int, gp : FFXIVGamePacket) = 
+let MarketPacketHandler2 (gp : FFXIVGamePacket) = 
     let marketData = MarketPacket.ParseFromBytes(gp.Data)
     marketQueue.Enqueue(MarketPacket.ParseFromBytes(gp.Data))
 
-let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) = 
+let TradeLogPacketHandler (gp : FFXIVGamePacket) = 
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
     for log in tradeLogs.Records do
@@ -55,20 +59,13 @@ let TradeLogPacketHandler (idx : int, gp : FFXIVGamePacket) =
     sb.AppendLine("====TradeLogDataEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
-let AllPacketHandler (idx, total, gp : FFXIVGamePacket) = 
+let LogGamePacket (idx, total, gp : FFXIVGamePacket) = 
     let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
     let ts     = gp.TimeStamp
     let data   = Utils.HexString.ToHex (gp.Data)
-    NLog.LogManager.GetCurrentClassLogger().Trace("UnknownGamePacket: MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx, total, data, gp.Magic)
+    NLog.LogManager.GetCurrentClassLogger().Trace("GamePacket: MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx + 1, total + 1, data, gp.Magic)
 
-let UnknownPacketHandler (idx, total, gp : FFXIVGamePacket) = 
-    let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
-    let ts     = gp.TimeStamp
-    let data   = Utils.HexString.ToHex (gp.Data)
-    NLog.LogManager.GetCurrentClassLogger().Trace("UnknownGamePacket: MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx, total, data, gp.Magic)
-    
-
-let MarketListHandler (idx, gp : FFXIVGamePacket) = 
+let MarketListHandler (gp : FFXIVGamePacket) = 
     let sb = new StringBuilder("====MarketList====\r\n")
     let mlp= MarketListPacket.FromBytes(gp.Data)
     for d in mlp.Records do 
@@ -82,22 +79,104 @@ let MarketListHandler (idx, gp : FFXIVGamePacket) =
     sb.AppendLine("====MarketListEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
-let logger = NLog.LogManager.GetCurrentClassLogger()
+let WorldListHandler(gp : FFXIVGamePacket) = 
+    let worlds = WorldList.ParseFromBytes(gp.Data)
+    for world in worlds do 
+        NLog.LogManager.GetCurrentClassLogger().Info("添加服务器 {0}({1}) 到缓存", world.WorldName, world.WorldId)
+        Utils.DictionaryAddOrUpdate(GlobalVars.WorldsIdToWorld, world.WorldId, world)
 
-let PacketHandler (bytes : byte []) = 
+let CharacterListHandler (gp : FFXIVGamePacket) = 
+    let list = CharacterList.ParseFromBytes(gp.Data)
+    for char in list.Charas do 
+        NLog.LogManager.GetCurrentClassLogger().Info("添加{2}角色 {0}({1}) 到缓存", char.UserId, char.UserName, char.WorldId)
+        Utils.DictionaryAddOrUpdate(GlobalVars.Character, char.UserId, char)
+
+let CharaSelectReply (gp : FFXIVGamePacket) = 
+    let reply = CharaSelectReply.ParseFromBytes(gp.Data)
+    let char  = GlobalVars.Character.[reply.CharacterId]
+    let world = GlobalVars.WorldsIdToWorld.[char.WorldId]
+    let logger = NLog.LogManager.GetCurrentClassLogger()
+    logger.Info("以角色:{0}({1})登陆到服务器{2}({3}) : {4}:{5}", char.UserName, reply.CharacterId
+                                                     , world.WorldName, world.WorldId
+                                                     , reply.WorldIP, reply.WorldPort)
+    logger.Info("添加{0}:{1}到服务器列表缓存", reply.WorldIP, reply.WorldPort)
+    Utils.DictionaryAddOrUpdate(GlobalVars.ServerIpToWorld, reply.WorldIP, world)
+
+let IncomingGamePacketHandler (gp : FFXIVGamePacket) = 
+    match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
+    | Opcodes.Market -> MarketPacketHandler2(gp)
+    | Opcodes.TradeLog -> TradeLogPacketHandler(gp)
+    | Opcodes.MarketList -> MarketListHandler(gp)
+    | Opcodes.WorldList -> WorldListHandler(gp)
+    | Opcodes.CharaList -> CharacterListHandler(gp)
+    | Opcodes.SelectCharaReply -> CharaSelectReply(gp)
+    | _ -> ()
+
+let OutgoingGamePacketHandler (gp : FFXIVGamePacket) = 
+    match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
+    | _ -> ()
+
+let HandleClientHandshake(sp : FFXIVSubPacket) = 
+    let ticketAscii = 
+        let bytes = sp.Data.[36 .. 36 + 0x20 - 1]
+        Encoding.ASCII.GetString(bytes)
+    let clientNumber = BitConverter.ToUInt32(sp.Data, 100)
+    printfn "Ticket%s ClientNumber%i" ticketAscii clientNumber
+    LibFFXIV.Utils.InitBlowfish(ticketAscii, clientNumber)
+    
+
+
+let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) = 
+    let isLobby = p.World.IsLobby
+    let bytes   = p.Data
     try
         let packet = FFXIVBasePacket.ParseFromBytes(bytes)
-        let spCount= packet.SubPackets.Length - 1
-        packet.SubPackets
-        |> Array.iteri (fun idx sp ->
-            if sp.Type = 0x0003us then
+        let subPackets = 
+            let sp = packet.GetSubPackets()
+            let rdy= LibFFXIV.Utils.IsDecipherReady()
+            let dec= 
+                let en = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.[0].Type)
+                match en with
+                | PacketTypes.ClientHandShake
+                | PacketTypes.Ping
+                | PacketTypes.Pong
+                    -> false
+                | _ -> true
+            if isLobby && (dec) then
+                if rdy then
+                    sp
+                    |> Array.map (fun sp ->
+                        {sp with Data = LibFFXIV.Utils.DecipherData(sp.Data)}
+                    )
+                else
+                    failwithf "需要解密，但解密器未就绪"
+            else
+                sp
+
+        let spCount= subPackets.Length - 1
+
+        for idx = 0 to spCount do
+            let sp   = subPackets.[idx]
+            let en   = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
+            match en with
+            | PacketTypes.Game  ->
                 let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
-                AllPacketHandler(idx ,spCount , gp)
-                match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
-                | Opcodes.Market -> MarketPacketHandler2(idx, gp)
-                | Opcodes.TradeLog -> TradeLogPacketHandler(idx, gp)
-                | Opcodes.MarketList -> MarketListHandler(idx, gp)
-                | _ -> ()) // UnknownPacketHandler(idx ,spCount , gp))
+                LogGamePacket(idx, spCount, gp)
+                match p.Direction with
+                | LibFFXIV.TcpPacket.PacketDirection.In  -> IncomingGamePacketHandler(gp)
+                | LibFFXIV.TcpPacket.PacketDirection.Out -> OutgoingGamePacketHandler(gp)
+                
+            | PacketTypes.ServerHandShake ->
+                logger.Info("Server say hello!")
+            | PacketTypes.ClientHandShake ->
+                HandleClientHandshake(sp)
+            | PacketTypes.Ping
+            | PacketTypes.Pong
+                -> ()
+            | _ -> 
+                let t = Utils.HexString.ToHex (BitConverter.GetBytes(sp.Type))
+                let d = Utils.HexString.ToHex (sp.Data)
+                logger.Info("Unknown SubPacket isLobby({0}): Type:{1} DATA:{2}", isLobby, sp.Type, d)
     with
     | e ->  
         NLog.LogManager.GetCurrentClassLogger().Error("Error packet:{0}", Utils.HexString.ToHex(bytes))

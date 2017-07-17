@@ -1,17 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FFXIVNetwork", "FFXIVNetwork\FFXIVNetwork.fsproj", "{E9BD77FF-5078-4851-8D4B-DFA34254428D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPHelper", "IPHelper.Net\Src\IPHelper\IPHelper.csproj", "{640B925B-8F4C-4891-84FC-648DA3DB3625}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibXIVDMF", "LibXIVDMF\LibXIVDMF.fsproj", "{8A3C2B67-647D-431A-9AC1-7695667B0DE7}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV", "LibFFXIV\LibFFXIV\LibFFXIV.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XIVConsole", "XIVConsole\XIVConsole.fsproj", "{AF964A55-D344-4125-8EB5-EA1096AB6630}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blowfish", "Blowfish\Blowfish.csproj", "{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,14 +29,6 @@ Global
 		{E9BD77FF-5078-4851-8D4B-DFA34254428D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E9BD77FF-5078-4851-8D4B-DFA34254428D}.Release|x86.ActiveCfg = Release|x86
 		{E9BD77FF-5078-4851-8D4B-DFA34254428D}.Release|x86.Build.0 = Release|x86
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Debug|x86.ActiveCfg = Debug|x86
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Debug|x86.Build.0 = Debug|x86
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|Any CPU.Build.0 = Release|Any CPU
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|x86.ActiveCfg = Release|x86
-		{640B925B-8F4C-4891-84FC-648DA3DB3625}.Release|x86.Build.0 = Release|x86
 		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A3C2B67-647D-431A-9AC1-7695667B0DE7}.Debug|x86.ActiveCfg = Debug|x86
@@ -61,6 +53,14 @@ Global
 		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Release|x86.ActiveCfg = Release|x86
 		{AF964A55-D344-4125-8EB5-EA1096AB6630}.Release|x86.Build.0 = Release|x86
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4682EE2-FB82-4174-8BDB-D6D92F9DF077}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
