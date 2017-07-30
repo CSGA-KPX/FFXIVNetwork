@@ -2,10 +2,13 @@
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let Start() = 
-    if RawPacketSource.PCap.IsAvailable() then
+    if   RawPacketSource.Winsock.IsAvailable() then
+        RawPacketSource.Winsock.Start()
+    elif RawPacketSource.PCap.IsAvailable() then
         RawPacketSource.PCap.Start()
     else
         RawPacketSource.Winsock.Start()
+        
 
 [<EntryPoint>]
 let main argv = 
@@ -16,6 +19,11 @@ let main argv =
     logger.Info("正在加载数据")
     LibFFXIV.Database.ItemProvider |> ignore
     Utils.LobbyServerIP |> ignore
+    let world = 
+        {LibFFXIV.SpecializedPacket.World.WorldId   = 0x412us
+         LibFFXIV.SpecializedPacket.World.WorldName = "拉诺西亚"}
+    GlobalVars.WorldsIdToWorld.Add(0x412us, world)
+    GlobalVars.ServerIpToWorld.Add("116.211.8.43", world)
     //一些预定义的数据
 
     logger.Info("数据加载结束")

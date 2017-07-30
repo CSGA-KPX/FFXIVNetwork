@@ -1,8 +1,6 @@
 ﻿module FFXIV.PacketHandler
 open System
 open System.Text
-open System.Security.Cryptography
-open System.IO
 open LibFFXIV.Constants
 open LibFFXIV.BasePacket
 open LibFFXIV.SpecializedPacket
@@ -30,8 +28,10 @@ let tester (ra : MarketRecord []) =
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
 let submitData (ra : MarketRecord []) = 
-    NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-    LibXIVDMF.Market.SubmitMarketData(ra)
+    Threading.ThreadPool.QueueUserWorkItem(fun _ -> 
+        NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
+        LibXIVDMF.Market.SubmitMarketData(ra)
+    ) |> ignore
     
 let marketQueue = 
     let i  = new MarketQueue()
@@ -121,7 +121,7 @@ let HandleClientHandshake(sp : FFXIVSubPacket) =
         let bytes = sp.Data.[36 .. 36 + 0x20 - 1]
         Encoding.ASCII.GetString(bytes)
     let clientNumber = BitConverter.ToUInt32(sp.Data, 100)
-    printfn "Ticket%s ClientNumber%i" ticketAscii clientNumber
+    logger.Info("Ticket{0} ClientNumber{1}", ticketAscii, clientNumber)
     LibFFXIV.Utils.InitBlowfish(ticketAscii, clientNumber)
     
 
@@ -135,13 +135,16 @@ let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) =
             let sp = packet.GetSubPackets()
             let rdy= LibFFXIV.Utils.IsDecipherReady()
             let dec= 
-                let en = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.[0].Type)
-                match en with
-                | PacketTypes.ClientHandShake
-                | PacketTypes.Ping
-                | PacketTypes.Pong
-                    -> false
-                | _ -> true
+                if sp.Length <> 0 then
+                    let en = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.[0].Type)
+                    match en with
+                    | PacketTypes.ClientHandShake
+                    | PacketTypes.Ping
+                    | PacketTypes.Pong
+                        -> false
+                    | _ -> true
+                else
+                    false
             if isLobby && (dec) then
                 if rdy then
                     sp
@@ -180,4 +183,3 @@ let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) =
     with
     | e ->  
         NLog.LogManager.GetCurrentClassLogger().Error("Error packet:{0}", Utils.HexString.ToHex(bytes))
-        reraise()

@@ -8,6 +8,7 @@ module PCap =
     open LibFFXIV.TcpPacket
     open SharpPcap
     open PacketDotNet
+    let logger = NLog.LogManager.GetCurrentClassLogger()
 
     let IsAvailable () = 
         try
@@ -22,10 +23,11 @@ module PCap =
         let devices = 
             CaptureDeviceList.Instance
             |> Seq.filter (fun x ->
+                logger.Trace("已知适配器{0}" ,x)
                 let isActive   = x.ToString().Contains(clientIP.Value)
                 isActive)        
             |> Seq.mapi (fun i x -> 
-                printfn "可用适配器%i %O" i x
+                logger.Info("可用适配器{0}, {1}",i ,x)
                 x)
             |> Seq.toArray
 
@@ -56,31 +58,9 @@ module Winsock =
     open System.Net
     open System.Net.Sockets
     open PacketDotNet
-    open NetFwTypeLib
-
-    module UAC = 
-        open System
-        open System.Diagnostics
-        open System.Security.Principal
-
-        let IsAdministrator() = 
-            let identity = WindowsIdentity.GetCurrent()
-            let principal = new WindowsPrincipal(identity)
-            principal.IsInRole(WindowsBuiltInRole.Administrator)
-
-        let rec RestartWithUAC() = 
-            let exeFile = Process.GetCurrentProcess().MainModule.FileName
-            let psi = new ProcessStartInfo(exeFile)
-            psi.UseShellExecute <- true
-            psi.WorkingDirectory <- Environment.CurrentDirectory
-            psi.Verb <- "runas"
-            try
-                Process.Start(psi) |> ignore
-            with
-            | _ -> RestartWithUAC()
-            Environment.Exit(0)
 
     let StartSocketSniff() = 
+        NLog.LogManager.GetCurrentClassLogger().Info("开始使用RawSocket抓包")
         let s = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.IP)
         s.Bind(new IPEndPoint(IPAddress.Parse(Utils.LocalIPAddress), 0))
         s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AcceptConnection, true)
@@ -103,26 +83,27 @@ module Winsock =
         ()
 
     let IsAvailable () = 
-        UAC.IsAdministrator()
-
-
-    let CheckFirewallStatus () = 
-        let mgr = 
-            let t = Type.GetTypeFromProgID("HNetCfg.FwMgr", false)
-            Activator.CreateInstance(t) :?> INetFwMgr
-        let appList = mgr.LocalPolicy.CurrentProfile.AuthorizedApplications
-        printfn ">%s<" (Diagnostics.Process.GetCurrentProcess().MainModule.FileName)
+        Utils.UAC.IsAdministrator()
     
-        for app in appList do 
-            let app = app :?> INetFwAuthorizedApplication
-            printfn "%s" app.ProcessImageFileName
-    
+    let CheckFirewallConfigured() = 
+        if Utils.FirewallWarpper.IsFirewallDisabled() then
+            true
+        else
+            Utils.FirewallWarpper.IsFirewallApplicationConfigured()//&& Utils.FirewallWarpper.IsFirewallRuleConfigured()
+
     let Start () = 
         if IsAvailable() then
-            NLog.LogManager.GetCurrentClassLogger().Info("开始使用RawSocket抓包，请确定已添加防火墙例外")
-            StartSocketSniff()
+            if not (CheckFirewallConfigured()) then
+                NLog.LogManager.GetCurrentClassLogger().Error("没有检测到防火墙例外，无法使用RawSocket抓包")
+            else    
+                StartSocketSniff()
         else
-            CheckFirewallStatus()
             NLog.LogManager.GetCurrentClassLogger().Info("RawSocket抓包需要提升权限，请按任意键继续")
             Console.ReadKey(true) |> ignore
-            UAC.RestartWithUAC()
+            Utils.UAC.RestartWithUAC()
+
+module WinsockACT = 
+    open System
+    open System.Net
+    open System.Net.Sockets
+    open PacketDotNet
