@@ -124,6 +124,11 @@
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
+    <ProjectReference Include="..\IPHelper.Net\Src\IPHelper\IPHelper.csproj">
+      <Name>IPHelper</Name>
+      <Project>{640b925b-8f4c-4891-84fc-648da3db3625}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\LibFFXIV\LibFFXIV\LibFFXIV.fsproj">
       <Name>LibFFXIV</Name>
       <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
