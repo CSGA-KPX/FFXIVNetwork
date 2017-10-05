@@ -12,7 +12,7 @@ let tester (ra : MarketRecord []) =
     let sb = (new StringBuilder()).AppendFormat("====MarketData====\r\n")
     
     for data in ra do
-        let i = SuItemData.Instance.FromXIVId(data.Itemid |> int)
+        let i = SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
         let date  = LibFFXIV.Utils.TimeStamp.FromSeconds(data.TimeStamp)
         let price = data.Price
         let count = data.Count
@@ -47,7 +47,7 @@ let TradeLogPacketHandler (gp : FFXIVGamePacket) =
     let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
     let sb = (new StringBuilder()).AppendLine("====TradeLogData====")
     for log in tradeLogs.Records do
-        let i     = SuItemData.Instance.FromXIVId(log.ItemID |> int)
+        let i     = SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
         let iName = 
             if i.IsSome then
                 i.Value.ToString()
@@ -69,7 +69,7 @@ let MarketListHandler (gp : FFXIVGamePacket) =
     let sb = new StringBuilder("====MarketList====\r\n")
     let mlp= MarketListPacket.FromBytes(gp.Data)
     for d in mlp.Records do 
-        let item = ItemProvider.FromXIVId(d.ItemId |>int)
+        let item = SaintCoinachItemProvider.GetInstance().FromId(d.ItemId |>int)
         let iName = 
             if item.IsSome then
                 item.Value.ToString()

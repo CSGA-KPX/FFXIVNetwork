@@ -35,7 +35,7 @@ type MarketFetchResult =
     }
 
 let FetchMarketData(item : LibFFXIV.Database.ItemRecord) =
-    let res    = client.GetAsync(dataUrl (item.XIVDbId)).Result
+    let res    = client.GetAsync(dataUrl (item.Id)).Result
     let resp   = res.Content.ReadAsStringAsync().Result
     let update = 
         let v = res.Content.Headers.LastModified

@@ -7,6 +7,7 @@ type DisplayOP =
     | BeginSum
     | EndSum of string
     | EmptyLine
+    | Error of string
 
     member x.Fetch() = 
         match x with
@@ -40,9 +41,12 @@ type StringQuery =
         | MaterialsRecGroup x -> x
 
     member x.GetOP() = 
-        let item = LibFFXIV.Database.ItemProvider.TryGetItem(x.Name)
+        let item = LibFFXIV.Database.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
+        let rm = LibFFXIV.Database.RecipeManager.GetInstance()
         if item.IsNone then
-            failwithf "找不到物品%A" x
+            [|
+                Error (sprintf "找不到物品%A" x)
+            |]
         else
             let item = item.Value
             [|
@@ -50,15 +54,15 @@ type StringQuery =
                 | Item         x ->
                     yield Query (x.ToString() ,item, 1.0)
                 | Materials    x ->
-                    let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterials(item)
+                    let ma = rm.GetMaterials(item)
                     let qn = x.ToString()
                     yield BeginSum
                     for (a, b) in ma do
                         yield Query (qn, a, b)
                     yield EndSum (x.ToString())
                 | MaterialsRec x ->
-                    let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRec(item)
-                    let ma = ma |> Array.sortBy (fun (item, count) -> item.XIVDbId)
+                    let ma = rm.GetMaterialsRec(item)
+                    let ma = ma |> Array.sortBy (fun (item, count) -> item.Id)
 
                     let qn = x.ToString()
                     yield BeginSum
@@ -66,7 +70,7 @@ type StringQuery =
                         yield Query (qn, a, b)
                     yield EndSum (x.ToString())
                 | MaterialsRecGroup x ->
-                    let maa = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRecGroup(item)
+                    let maa = rm.GetMaterialsRecGroup(item)
                     for (level, ma) in maa do 
                         if ma.Length = 1 then
                             let (i, c) = ma.[0]

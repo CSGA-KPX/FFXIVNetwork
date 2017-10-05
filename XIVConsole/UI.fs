@@ -138,7 +138,7 @@ type MainForm () as this =
                     sum <- sum + total
                     addList
                         name
-                        (res.Item.GetName())
+                        (res.Item.Name)
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
@@ -146,7 +146,7 @@ type MainForm () as this =
                 | Utils.DisplayOP.Result (name, res, count) when not res.Success ->
                     addList
                         name
-                        (res.Item.GetName())
+                        (res.Item.Name)
                         "暂缺"
                         (String.Format("{0:0.###}", count))
                         "--"
@@ -159,6 +159,8 @@ type MainForm () as this =
                         "--"
                         (sum.ToString())
                         "--"
-                | _ -> ()
+                | Utils.DisplayOP.Error str ->
+                    addList str "" "" "" "" ""
+                | _ -> failwithf ""
         list.Items.AddRange(buf.ToArray())
         tp.Invoke(new Action(fun () -> tp.Controls.Add(list))) |> ignore
