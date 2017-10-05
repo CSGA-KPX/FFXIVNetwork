@@ -79,17 +79,18 @@ let MarketListHandler (gp : FFXIVGamePacket) =
     sb.AppendLine("====MarketListEnd====") |> ignore
     NLog.LogManager.GetCurrentClassLogger().Info(sb.ToString())
 
-let WorldListHandler(gp : FFXIVGamePacket) = 
-    let worlds = WorldList.ParseFromBytes(gp.Data)
-    for world in worlds do 
-        NLog.LogManager.GetCurrentClassLogger().Info("添加服务器 {0}({1}) 到缓存", world.WorldName, world.WorldId)
-        Utils.DictionaryAddOrUpdate(GlobalVars.WorldsIdToWorld, world.WorldId, world)
-
+(*
 let CharacterListHandler (gp : FFXIVGamePacket) = 
     let list = CharacterList.ParseFromBytes(gp.Data)
     for char in list.Charas do 
         NLog.LogManager.GetCurrentClassLogger().Info("添加{2}角色 {0}({1}) 到缓存", char.UserId, char.UserName, char.WorldId)
         Utils.DictionaryAddOrUpdate(GlobalVars.Character, char.UserId, char)
+
+let WorldListHandler(gp : FFXIVGamePacket) = 
+    let worlds = WorldList.ParseFromBytes(gp.Data)
+    for world in worlds do 
+        NLog.LogManager.GetCurrentClassLogger().Info("添加服务器 {0}({1}) 到缓存", world.WorldName, world.WorldId)
+        Utils.DictionaryAddOrUpdate(GlobalVars.WorldsIdToWorld, world.WorldId, world)
 
 let CharaSelectReply (gp : FFXIVGamePacket) = 
     let reply = CharaSelectReply.ParseFromBytes(gp.Data)
@@ -100,16 +101,16 @@ let CharaSelectReply (gp : FFXIVGamePacket) =
                                                      , world.WorldName, world.WorldId
                                                      , reply.WorldIP, reply.WorldPort)
     logger.Info("添加{0}:{1}到服务器列表缓存", reply.WorldIP, reply.WorldPort)
-    Utils.DictionaryAddOrUpdate(GlobalVars.ServerIpToWorld, reply.WorldIP, world)
+    Utils.DictionaryAddOrUpdate(GlobalVars.ServerIpToWorld, reply.WorldIP, world)*)
 
 let IncomingGamePacketHandler (gp : FFXIVGamePacket) = 
     match LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode) with
     | Opcodes.Market -> MarketPacketHandler2(gp)
     | Opcodes.TradeLog -> TradeLogPacketHandler(gp)
     | Opcodes.MarketList -> MarketListHandler(gp)
-    | Opcodes.WorldList -> WorldListHandler(gp)
-    | Opcodes.CharaList -> CharacterListHandler(gp)
-    | Opcodes.SelectCharaReply -> CharaSelectReply(gp)
+    //| Opcodes.WorldList -> WorldListHandler(gp)
+    //| Opcodes.CharaList -> CharacterListHandler(gp)
+    //| Opcodes.SelectCharaReply -> CharaSelectReply(gp)
     | _ -> ()
 
 let OutgoingGamePacketHandler (gp : FFXIVGamePacket) = 

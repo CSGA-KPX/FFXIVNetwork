@@ -3,11 +3,11 @@ let logger = NLog.LogManager.GetCurrentClassLogger()
 
 let Start() = 
     if   RawPacketSource.Winsock.IsAvailable() then
-        RawPacketSource.Winsock.Start()
+        RawPacketSource.WinsockACT.Start()
     elif RawPacketSource.PCap.IsAvailable() then
         RawPacketSource.PCap.Start()
     else
-        RawPacketSource.Winsock.Start()
+        RawPacketSource.WinsockACT.Start()
         
 
 [<EntryPoint>]
@@ -17,18 +17,11 @@ let main argv =
         logger.Fatal("UnhandledException:{0}", e.ToString())
     )
     logger.Info("正在加载数据")
-    LibFFXIV.Database.SaintCoinachItemProvider.GetInstance() |> ignore
-    Utils.LobbyServerIP |> ignore
-    let world = 
-        {LibFFXIV.SpecializedPacket.World.WorldId   = 0x412us
-         LibFFXIV.SpecializedPacket.World.WorldName = "拉诺西亚"}
-    GlobalVars.WorldsIdToWorld.Add(0x412us, world)
-    GlobalVars.ServerIpToWorld.Add("116.211.8.39", world)
-    //一些预定义的数据
-
-    logger.Info("数据加载结束")
     try
+        LibFFXIV.Database.SaintCoinachItemProvider.GetInstance() |> ignore
+        Utils.LobbyServerIP |> ignore
         Utils.LocalIPAddress |> ignore
+        logger.Info("数据加载结束")
         Start()
     with
     | e -> printfn "%s" (e.ToString())

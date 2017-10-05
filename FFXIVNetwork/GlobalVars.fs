@@ -2,7 +2,7 @@
 open System
 open System.Collections.Generic
 
-let WorldsIdToWorld = new Dictionary<uint16, LibFFXIV.SpecializedPacket.World>()
+//let WorldsIdToWorld = new Dictionary<uint16, LibFFXIV.SpecializedPacket.World>()
 
 let ServerIpToWorld = 
     let d = new Dictionary<string, LibFFXIV.SpecializedPacket.World>()

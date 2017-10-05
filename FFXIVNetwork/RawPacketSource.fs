@@ -103,103 +103,47 @@ module Winsock =
             Utils.UAC.RestartWithUAC()
 
 module WinsockACT = 
-    module Connections = 
-        open System
-        open System.Threading
-        open System.Diagnostics
-
-        let internal getXIVProcessList() = 
-            let FFXIV_PROCESS_NAME = [ "ffxiv"; "ffxiv_dx11" ]
-            [
-                for name in FFXIV_PROCESS_NAME do
-                    let pes = Process.GetProcessesByName(name)
-                    for p in pes do
-                        yield p.Id
-            ]
-
-        let internal getXIVConnections() = 
-            IPHelper.Functions.GetExtendedTcpTable(true,IPHelper.Win32Funcs.TcpTableType.OwnerPidAll)
-            |> Seq.filter (fun c -> List.exists (fun x -> x = c.ProcessId) (getXIVProcessList()) )
-            |> Seq.toArray
-
-
-    module ServerIP = 
-        open System
-        open System.Threading
-        open Connections
-
-        let infoLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion)
-        let mutable serverIP = ""
-        let mutable clientIP = ""
-        let mutable lastRefreshTimeClient : DateTime = DateTime.Now
-        let mutable lastRefreshTimeServer : DateTime = DateTime.Now
-        let isExpried () = 
-            let Timer = 10
-            let A = String.IsNullOrEmpty(serverIP)
-            let B = (DateTime.Now - lastRefreshTimeServer).Seconds > Timer
-            A || B
-
-        let GetClient() = 
-            infoLock.EnterUpgradeableReadLock()
-            let ret = 
-                if clientIP = "" || isExpried() then
-                    let cons = 
-                        getXIVConnections()
-                        |> Array.map (fun x -> x.LocalEndPoint.Address.ToString())
-                        |> Seq.ofArray
-                        |> Seq.distinct
-                    if (Seq.length cons) = 0 then
-                        None
-                    else
-                        infoLock.EnterWriteLock()
-                        clientIP <- Seq.head cons
-                        lastRefreshTimeClient <- DateTime.Now
-                        infoLock.ExitWriteLock()
-                        Some(clientIP)
-                else
-                    Some(clientIP)
-            infoLock.ExitUpgradeableReadLock()
-            ret
-        
-
-        let GetServer() = 
-            infoLock.EnterUpgradeableReadLock()
-            let ret = 
-                if isExpried() then
-                    let cons = 
-                        getXIVConnections()
-                        |> Array.map (fun x -> x.RemoteEndPoint.Address.ToString())
-                        |> Seq.ofArray
-                        |> Seq.distinct
-                    if (Seq.length cons) = 0 then
-                        None
-                    else
-                        infoLock.EnterWriteLock()
-                        serverIP <- Seq.head cons
-                        lastRefreshTimeServer <- DateTime.Now
-                        infoLock.ExitWriteLock()
-                        Some(serverIP)
-                else
-                    Some(serverIP)
-            infoLock.ExitUpgradeableReadLock()
-            ret
-
     open System
-    open System.Net
-    open System.Net.Sockets
-    open PacketDotNet
+    open System.Threading
+    open System.Diagnostics
+    open System.Net.NetworkInformation
+    open System.Timers
 
     let logger = NLog.LogManager.GetCurrentClassLogger()
 
-    let Start () = 
-        while ServerIP.GetServer().IsNone do
-            logger.Info("没找到游戏连接，10秒后重试")
-            Threading.Thread.Sleep(10 * 1000)
-        let ip = ServerIP.GetServer().Value
-        if  ip = "116.211.8.43" || ip = "116.211.8.20" then
-            if PCap.IsAvailable() then
-                ()
-            else
-                ()
-        else
-            logger.Fatal("服务器IP错误，本应用仅限拉诺西亚使用{0}", ServerIP.GetServer().Value)
+    let internal getXIVProcessList() = 
+        let FFXIV_PROCESS_NAME = [ "ffxiv"; "ffxiv_dx11" ]
+        [
+            for name in FFXIV_PROCESS_NAME do
+                let pes = Process.GetProcessesByName(name)
+                for p in pes do
+                    yield p.Id
+        ]
+
+    let internal getXIVConnections() = 
+        IPHelper.Functions.GetExtendedTcpTable(true,IPHelper.Win32Funcs.TcpTableType.OwnerPidAll)
+        |> Seq.filter (fun c -> List.exists (fun x -> x = c.ProcessId) (getXIVProcessList()) )
+        |> Seq.filter (fun c ->
+            //排除大厅服务器连接
+            let isLobby = c.RemoteEndPoint.Address.ToString().Contains(Utils.LobbyServerIP)
+            not isLobby
+        )
+        |> Seq.toArray
+
+    let RefreshWorld() = 
+        let connections = getXIVConnections()
+        for c in connections do 
+            let addr  = c.RemoteEndPoint.Address.ToString()
+            let world = {LibFFXIV.SpecializedPacket.World.WorldId = 65534us; LibFFXIV.SpecializedPacket.World.WorldName = "ACT"}
+            if not (GlobalVars.ServerIpToWorld.ContainsKey(addr)) then
+                lock (GlobalVars.ServerIpToWorld) (fun () -> GlobalVars.ServerIpToWorld.Add(addr, world))
+        logger.Info(sprintf "活动连接：%A" GlobalVars.ServerIpToWorld)
+
+    let Start() = 
+        RefreshWorld()
+        let timer = new System.Timers.Timer(10000.0)
+        timer.Elapsed.Add(fun _ -> RefreshWorld())
+        timer.Enabled <- true
+        GC.KeepAlive(timer)
+
+        Winsock.Start()
