@@ -9,7 +9,7 @@ let Start() =
     else
         RawPacketSource.WinsockACT.Start()
         
-
+[<STAThread>]
 [<EntryPoint>]
 let main argv = 
     AppDomain.CurrentDomain.UnhandledException.Add(fun args -> 

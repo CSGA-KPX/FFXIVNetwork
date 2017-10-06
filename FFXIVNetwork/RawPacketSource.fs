@@ -137,7 +137,7 @@ module WinsockACT =
             let world = {LibFFXIV.SpecializedPacket.World.WorldId = 65534us; LibFFXIV.SpecializedPacket.World.WorldName = "ACT"}
             if not (GlobalVars.ServerIpToWorld.ContainsKey(addr)) then
                 lock (GlobalVars.ServerIpToWorld) (fun () -> GlobalVars.ServerIpToWorld.Add(addr, world))
-        logger.Info(sprintf "活动连接：%A" GlobalVars.ServerIpToWorld)
+        logger.Trace(sprintf "活动连接：%A" GlobalVars.ServerIpToWorld)
 
     let Start() = 
         RefreshWorld()
