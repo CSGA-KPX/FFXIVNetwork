@@ -123,7 +123,8 @@ let HandleClientHandshake(sp : FFXIVSubPacket) =
         Encoding.ASCII.GetString(bytes)
     let clientNumber = BitConverter.ToUInt32(sp.Data, 100)
     logger.Info("Ticket{0} ClientNumber{1}", ticketAscii, clientNumber)
-    LibFFXIV.Utils.InitBlowfish(ticketAscii, clientNumber)
+
+    LibFFXIV.Crypto.FFXIVCrypto.GetInstance().Initialize(ticketAscii, clientNumber)
     
 
 
@@ -134,7 +135,7 @@ let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) =
         let packet = FFXIVBasePacket.ParseFromBytes(bytes)
         let subPackets = 
             let sp = packet.GetSubPackets()
-            let rdy= LibFFXIV.Utils.IsDecipherReady()
+            let rdy= LibFFXIV.Crypto.FFXIVCrypto.GetInstance().IsReady()
             let dec= 
                 if sp.Length <> 0 then
                     let en = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.[0].Type)
@@ -150,7 +151,7 @@ let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) =
                 if rdy then
                     sp
                     |> Array.map (fun sp ->
-                        {sp with Data = LibFFXIV.Utils.DecipherData(sp.Data)}
+                        {sp with Data = LibFFXIV.Crypto.FFXIVCrypto.GetInstance().Decipher(sp.Data)}
                     )
                 else
                     failwithf "需要解密，但解密器未就绪"

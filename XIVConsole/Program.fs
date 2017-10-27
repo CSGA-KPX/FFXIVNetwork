@@ -9,11 +9,7 @@ open System.Windows.Forms
 let main argv = 
     Application.EnableVisualStyles();
     Application.SetCompatibleTextRenderingDefault(false);
+    //必须提前调用并写入配置文件，后期调用时线程不是STA会崩溃
+    LibFFXIV.Utils.GetXIVGamePath() |> ignore
     Application.Run(new UI.MainForm());
-
-    //let item = LibFFXIV.Database.SuItemData.Instance.FromName("加隆德大地皮帽")
-    //let item = LibFFXIV.Database.ItemProvider.TryGetItem("加隆德大地皮帽")
-    //let ma = LibFFXIV.Database.SuRecipeData.Instance.GetMaterialsRecGroup(item.Value)
-    //printfn "%A" ma
-    //Console.ReadLine() |> ignore
     0 // 返回整数退出代码
