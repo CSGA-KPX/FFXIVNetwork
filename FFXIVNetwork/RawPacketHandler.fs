@@ -1,17 +1,20 @@
 ﻿module RawPacketHandler
 open LibFFXIV.TcpPacket
 open PacketDotNet
+open FFXIV.PacketHandlerBase
 
 let RawPacketLogger = NLog.LogManager.GetLogger("RawTCPPacket")
 
+let handler = new PacketHandler()
+
 let incomePacketQueue = 
     let q = new LibFFXIV.TcpPacket.GamePacketQueue()
-    q.NewCompleteDataEvent.Add(FFXIV.PacketHandler.PacketHandler)
+    q.NewCompleteDataEvent.Add(handler.HandlePacket)
     q
 
 let outcomePacketQueue = 
     let q = new LibFFXIV.TcpPacket.GamePacketQueue()
-    q.NewCompleteDataEvent.Add(FFXIV.PacketHandler.PacketHandler)
+    q.NewCompleteDataEvent.Add(handler.HandlePacket)
     q
 
 //    Payload len = 0

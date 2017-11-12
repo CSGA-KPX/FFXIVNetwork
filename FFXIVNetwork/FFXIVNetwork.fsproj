@@ -80,7 +80,8 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="GlobalVars.fs" />
-    <Compile Include="FFXIV.LobbyPacketHandler.fs" />
+    <Compile Include="PacketHandlerBase.fs" />
+    <Compile Include="FFXIV.PacketHandlerV2.fs" />
     <Compile Include="FFXIV.PacketHandler.fs" />
     <Compile Include="RawPacketHandler.fs" />
     <Compile Include="RawPacketSource.fs" />

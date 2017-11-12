@@ -85,18 +85,9 @@ module Winsock =
     let IsAvailable () = 
         Utils.UAC.IsAdministrator()
     
-    let CheckFirewallConfigured() = 
-        if Utils.FirewallWarpper.IsFirewallDisabled() then
-            true
-        else
-            Utils.FirewallWarpper.IsFirewallApplicationConfigured()//&& Utils.FirewallWarpper.IsFirewallRuleConfigured()
-
     let Start () = 
         if IsAvailable() then
-            if not (CheckFirewallConfigured()) then
-                NLog.LogManager.GetCurrentClassLogger().Error("没有检测到防火墙例外，无法使用RawSocket抓包")
-            else    
-                StartSocketSniff()
+            StartSocketSniff()
         else
             NLog.LogManager.GetCurrentClassLogger().Info("RawSocket抓包需要提升权限，请按任意键继续")
             Console.ReadKey(true) |> ignore
