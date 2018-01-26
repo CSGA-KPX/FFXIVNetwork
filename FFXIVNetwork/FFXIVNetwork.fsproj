@@ -129,7 +129,7 @@
       <Project>{640b925b-8f4c-4891-84fc-648da3db3625}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV\LibFFXIV.fsproj">
+    <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
       <Name>LibFFXIV</Name>
       <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
       <Private>True</Private>

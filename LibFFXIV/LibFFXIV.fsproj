@@ -5,14 +5,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>af964a55-d344-4125-8eb5-ea1096ab6630</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>XIVConsole</RootNamespace>
-    <AssemblyName>XIVConsole</AssemblyName>
+    <ProjectGuid>da1d6501-6350-47d5-84d3-6aa1d5c1a70c</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>LibFFXIV</RootNamespace>
+    <AssemblyName>LibFFXIV</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
-    <Name>XIVConsole</Name>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Name>LibFFXIV</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,9 +22,9 @@
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,9 +33,7 @@
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -49,7 +47,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
@@ -60,7 +57,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <Choose>
@@ -78,10 +74,21 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="FFXIVCrypto.fs" />
     <Compile Include="Utils.fs" />
-    <Compile Include="UI.fs" />
-    <Compile Include="Program.fs" />
-    <None Include="App.config" />
+    <Compile Include="Constants.fs" />
+    <Compile Include="Database.fs" />
+    <Compile Include="BasePacket\GamePacket.fs" />
+    <Compile Include="BasePacket\SubPacket.fs" />
+    <Compile Include="BasePacket\BasePacket.fs" />
+    <Compile Include="SpecializedPacket\MarketOrders.fs" />
+    <Compile Include="SpecializedPacket\MarketSearchResult.fs" />
+    <Compile Include="SpecializedPacket\TradeLog.fs" />
+    <Compile Include="SpecializedPacket\CharaSelectReply.fs" />
+    <Compile Include="SpecializedPacket\CharacterList.fs" />
+    <Compile Include="SpecializedPacket\WorldList.fs" />
+    <Compile Include="TcpPacket.fs" />
+    <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -91,25 +98,25 @@
       <AssemblyName>FSharp.Core.dll</AssemblyName>
       <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\FSharp\.NETFramework\v4.0\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
     </Reference>
+    <Reference Include="NLog">
+      <HintPath>z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\packages\NLog.4.4.10\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ValueTuple">
-      <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+      <HintPath>z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
-      <Name>LibFFXIV</Name>
-      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\LibXIVDMF\LibXIVDMF.fsproj">
-      <Name>LibXIVDMF</Name>
-      <Project>{8a3c2b67-647d-431a-9ac1-7695667b0de7}</Project>
+    <ProjectReference Include="K:\Apps\SaintCoinach\SaintCoinach\SaintCoinach.csproj">
+      <Name>SaintCoinach (SaintCoinach\SaintCoinach)</Name>
+      <Project>{8a7d65eb-3de3-4631-b286-cc73a3126002}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
