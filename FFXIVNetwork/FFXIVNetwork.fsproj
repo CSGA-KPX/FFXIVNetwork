@@ -82,8 +82,6 @@
     <Compile Include="GlobalVars.fs" />
     <Compile Include="PacketHandlerBase.fs" />
     <Compile Include="FFXIV.PacketHandlerV2.fs" />
-    <Compile Include="RawPacketHandler.fs" />
-    <Compile Include="RawPacketSource.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
@@ -102,6 +100,16 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Machina\Machina.FFXIV\Machina.FFXIV.csproj">
+      <Name>Machina.FFXIV</Name>
+      <Project>{4303e4f0-4c90-44eb-90c2-691451fe49e7}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Machina\Machina\Machina.csproj">
+      <Name>Machina (Machina\Machina)</Name>
+      <Project>{2681c607-a075-4070-be13-34f0a395119e}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
       <Name>FSharp.Core</Name>
@@ -124,11 +132,6 @@
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
-    <ProjectReference Include="..\IPHelper.Net\Src\IPHelper\IPHelper.csproj">
-      <Name>IPHelper</Name>
-      <Project>{640b925b-8f4c-4891-84fc-648da3db3625}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
       <Name>LibFFXIV</Name>
       <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>

@@ -92,98 +92,43 @@ type PacketHandler() as x =
             | LibFFXIV.TcpPacket.PacketDirection.Out -> ">>>>>"
         plogger.Trace("GamePacket:{6} MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx + 1, total + 1, data, gp.Magic, dir)
 
-    member x.HandlePacket (p : LibFFXIV.TcpPacket.QueuedPacket) = 
+    member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction) = 
+        let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
+        let ts     = gp.TimeStamp
+        let data   = Utils.HexString.ToHex (gp.Data)
+        let dir    = 
+            match direction with
+            | LibFFXIV.TcpPacket.PacketDirection.In  -> "<<<<<"
+            | LibFFXIV.TcpPacket.PacketDirection.Out -> ">>>>>"
+        plogger.Trace("GamePacket:{6} MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, 0, 0, data, gp.Magic, dir)
+
+    member x.HandlePacketMachina (epoch : int64, data : byte [], direction : LibFFXIV.TcpPacket.PacketDirection) = 
         try
-            let packet = FFXIVBasePacket.ParseFromBytes(p.Data)
-            let sps    = packet.GetSubPackets()
-            let splen  = sps.Length
-            sps
-            |> Array.iteri (fun idx sp -> 
-                let spType = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
-                match spType with
-                | PacketTypes.None ->
-                    failwithf "不应出现PacketTypes.None"
-                | PacketTypes.KeepAliveRequest
-                | PacketTypes.KeepAliveResponse
-                | PacketTypes.ClientHelloWorld
-                | PacketTypes.ServerHelloWorld
-                | PacketTypes.ClientHandShake
-                | PacketTypes.ServerHandShake
-                    -> ()
-                | PacketTypes.GameMessage ->
-                    let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
-                    x.LogGamePacket(idx, splen, gp, p.Direction)
-                    match p.Direction with
-                    | LibFFXIV.TcpPacket.PacketDirection.In  ->
-                        let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
-                        if handlers.ContainsKey(op) then
-                            let (obj, method) = handlers.[op]
-                            method.Invoke(obj, [| box gp |]) |> ignore
-                    | LibFFXIV.TcpPacket.PacketDirection.Out -> ()
-                | _ -> failwithf "未知子包类型%O" spType
-            )
+
+            let sp = FFXIVSubPacket.Parse(data).[0] //TODO
+            let spType = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
+            match spType with
+            | PacketTypes.None ->
+                failwithf "不应出现PacketTypes.None"
+            | PacketTypes.KeepAliveRequest
+            | PacketTypes.KeepAliveResponse
+            | PacketTypes.ClientHelloWorld
+            | PacketTypes.ServerHelloWorld
+            | PacketTypes.ClientHandShake
+            | PacketTypes.ServerHandShake
+                -> ()
+            | PacketTypes.GameMessage ->
+                let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
+                x.LogGamePacketOne(gp, direction)
+                match direction with
+                | LibFFXIV.TcpPacket.PacketDirection.In  ->
+                    let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
+                    if handlers.ContainsKey(op) then
+                        let (obj, method) = handlers.[op]
+                        method.Invoke(obj, [| box gp |]) |> ignore
+                | LibFFXIV.TcpPacket.PacketDirection.Out -> ()
+            | _ -> failwithf "未知子包类型%O" spType
             
         with
         | e ->  
-            logger.Error("Error packet:{0}", Utils.HexString.ToHex(p.Data))
-
-
-(*
-let PacketHandler (p : LibFFXIV.TcpPacket.QueuedPacket) = 
-    let isLobby = p.World.IsLobby
-    let bytes   = p.Data
-    try
-        let packet = FFXIVBasePacket.ParseFromBytes(bytes)
-        let subPackets = 
-            let sp = packet.GetSubPackets()
-            let rdy= LibFFXIV.Crypto.FFXIVCrypto.GetInstance().IsReady()
-            let dec= 
-                if sp.Length <> 0 then
-                    let en = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.[0].Type)
-                    match en with
-                    | PacketTypes.ClientHandShake
-                    | PacketTypes.Ping
-                    | PacketTypes.Pong
-                        -> false
-                    | _ -> true
-                else
-                    false
-            if isLobby && (dec) then
-                if rdy then
-                    sp
-                    |> Array.map (fun sp ->
-                        {sp with Data = LibFFXIV.Crypto.FFXIVCrypto.GetInstance().Decipher(sp.Data)}
-                    )
-                else
-                    failwithf "需要解密，但解密器未就绪"
-            else
-                sp
-
-        let spCount= subPackets.Length - 1
-
-        for idx = 0 to spCount do
-            let sp   = subPackets.[idx]
-            let en   = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
-            match en with
-            | PacketTypes.Game  ->
-                let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
-                LogGamePacket(idx, spCount, gp)
-                match p.Direction with
-                | LibFFXIV.TcpPacket.PacketDirection.In  -> IncomingGamePacketHandler(gp)
-                | LibFFXIV.TcpPacket.PacketDirection.Out -> OutgoingGamePacketHandler(gp)
-                
-            | PacketTypes.ServerHandShake ->
-                logger.Info("Server say hello!")
-            | PacketTypes.ClientHandShake ->
-                HandleClientHandshake(sp)
-            | PacketTypes.Ping
-            | PacketTypes.Pong
-                -> ()
-            | _ -> 
-                let t = Utils.HexString.ToHex (BitConverter.GetBytes(sp.Type))
-                let d = Utils.HexString.ToHex (sp.Data)
-                logger.Info("Unknown SubPacket isLobby({0}): Type:{1} DATA:{2}", isLobby, sp.Type, d)
-    with
-    | e ->  
-        NLog.LogManager.GetCurrentClassLogger().Error("Error packet:{0}", Utils.HexString.ToHex(bytes))
-*)
+            logger.Error("Error packet:{0}", Utils.HexString.ToHex(data))
