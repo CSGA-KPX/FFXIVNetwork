@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FFXIVNetwork", "FFXIVNetwork\FFXIVNetwork.fsproj", "{E9BD77FF-5078-4851-8D4B-DFA34254428D}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibXIVDMF", "LibXIVDMF\LibXIVDMF.fsproj", "{8A3C2B67-647D-431A-9AC1-7695667B0DE7}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV", "LibFFXIV\LibFFXIV.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.Network", "LibFFXIV\LibFFXIV.Network.fsproj", "{DA1D6501-6350-47D5-84D3-6AA1D5C1A70C}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XIVConsole", "XIVConsole\XIVConsole.fsproj", "{AF964A55-D344-4125-8EB5-EA1096AB6630}"
 EndProject
@@ -31,6 +31,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Machina.FFXIV", "Machina\Machina.FFXIV\Machina.FFXIV.csproj", "{4303E4F0-4C90-44EB-90C2-691451FE49E7}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XIVServer", "XIVServer\XIVServer.fsproj", "{E3D103EF-0442-4D89-A4A2-842FE784CBAF}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.Client", "LibFFXIV.Client\LibFFXIV.Client.fsproj", "{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -150,6 +154,30 @@ Global
 		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
 		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|x86.ActiveCfg = Release|Any CPU
 		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|x86.Build.0 = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|x86.Build.0 = Debug|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release|x86.ActiveCfg = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release|x86.Build.0 = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release-Unsigned|x86.ActiveCfg = Release|Any CPU
+		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Release-Unsigned|x86.Build.0 = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Debug|x86.Build.0 = Debug|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release|x86.ActiveCfg = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release|x86.Build.0 = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release-Unsigned|x86.ActiveCfg = Release|Any CPU
+		{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}.Release-Unsigned|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

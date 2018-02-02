@@ -1,4 +1,4 @@
-﻿module LibFFXIV.Crypto
+﻿module LibFFXIV.Network.Crypto
 open System
 open System.IO
 open System.Security.Cryptography

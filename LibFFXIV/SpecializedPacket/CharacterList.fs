@@ -1,6 +1,6 @@
-﻿namespace LibFFXIV.SpecializedPacket
+﻿namespace LibFFXIV.Network.SpecializedPacket
 open System
-open LibFFXIV.Utils
+open LibFFXIV.Network.Utils
 
 type Character = 
     {

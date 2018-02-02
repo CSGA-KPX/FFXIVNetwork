@@ -4,6 +4,8 @@ open System.Net.Http
 open MBrace.FsPickler
 open MBrace.FsPickler.Json
 open System.Net.Http.Headers
+open LibFFXIV.Network.SpecializedPacket
+open LibFFXIV.Client
 
 let   toJson = FsPickler.CreateJsonSerializer(false, true)
 let utf8   = new Text.UTF8Encoding(false)
@@ -15,7 +17,7 @@ let client =
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"))
     client
 
-let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) = 
+let SubmitMarketData(ra : MarketRecord []) = 
     let itemId = ra.[0].Itemid |> int
     let json   = toJson.PickleToString(ra)
     let content= new StringContent(json, utf8, "application/json")
@@ -27,14 +29,14 @@ let SubmitMarketData(ra : LibFFXIV.SpecializedPacket.MarketRecord []) =
 
 type MarketFetchResult = 
     {
-        Records : LibFFXIV.SpecializedPacket.MarketRecord [] option
-        Item    : LibFFXIV.Database.ItemRecord
+        Records : MarketRecord [] option
+        Item    : Database.ItemRecord
         Success : bool
         Status  : string
         Updated : string
     }
 
-let FetchMarketData(item : LibFFXIV.Database.ItemRecord) =
+let FetchMarketData(item : Database.ItemRecord) =
     let res    = client.GetAsync(dataUrl (item.Id)).Result
     let resp   = res.Content.ReadAsStringAsync().Result
     let update = 
@@ -49,7 +51,7 @@ let FetchMarketData(item : LibFFXIV.Database.ItemRecord) =
 
     let records = 
         if res.IsSuccessStatusCode then
-            Some(toJson.UnPickleOfString<LibFFXIV.SpecializedPacket.MarketRecord []>(resp))
+            Some(toJson.UnPickleOfString<MarketRecord []>(resp))
         else
             NLog.LogManager.GetCurrentClassLogger().Info("获取价格失败 状态码：{0}", res.StatusCode)
             None

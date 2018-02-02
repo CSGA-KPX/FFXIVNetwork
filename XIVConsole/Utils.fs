@@ -1,8 +1,10 @@
 ﻿module Utils
 open System
+open LibFFXIV.Client
+open LibFFXIV.Network
 
 type DisplayOP = 
-    | Query  of string * LibFFXIV.Database.ItemRecord * float
+    | Query  of string * Database.ItemRecord * float
     | Result of string * LibXIVDMF.Market.MarketFetchResult * float
     | BeginSum
     | EndSum of string
@@ -41,8 +43,8 @@ type StringQuery =
         | MaterialsRecGroup x -> x
 
     member x.GetOP() = 
-        let item = LibFFXIV.Database.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
-        let rm = LibFFXIV.Database.RecipeManager.GetInstance()
+        let item = Database.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
+        let rm = Database.RecipeManager.GetInstance()
         if item.IsNone then
             [|
                 Error (sprintf "找不到物品%A" x)
@@ -84,7 +86,7 @@ type StringQuery =
                 yield EmptyLine
             |]
 
-let internal TakeMarketSample (samples : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
+let internal TakeMarketSample (samples : SpecializedPacket.MarketRecord [] , cutPct : int) = 
     [|
         //(price, count)
         let samples = samples |> Array.sortBy (fun x -> x.Price)
@@ -129,7 +131,7 @@ type StdEv =
             Deviation = 0.0
         }
 
-let GetStdEv(market : LibFFXIV.SpecializedPacket.MarketRecord [] , cutPct : int) = 
+let GetStdEv(market : SpecializedPacket.MarketRecord [] , cutPct : int) = 
     let samples = TakeMarketSample(market, cutPct)
     let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
     let average = 

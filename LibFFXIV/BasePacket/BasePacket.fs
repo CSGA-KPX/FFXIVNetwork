@@ -1,9 +1,9 @@
-namespace LibFFXIV.BasePacket
+namespace LibFFXIV.Network.BasePacket
 open System
 open System.IO
 open System.IO.Compression
-open LibFFXIV.BasePacket
-open LibFFXIV.Utils
+open LibFFXIV.Network.BasePacket
+open LibFFXIV.Network.Utils
 
 
 
@@ -63,8 +63,8 @@ type FFXIVBasePacket =
         use r = XIVBinaryReader.FromBytes(bytes)
         
         let magicHex = r.ReadHexString(16)
-        let isNormalMagic = magicHex = LibFFXIV.Constants.FFXIVBasePacketMagic
-        let isAltMagic    = magicHex = LibFFXIV.Constants.FFXIVBasePacketMagicAlt
+        let isNormalMagic = magicHex = LibFFXIV.Network.Constants.FFXIVBasePacketMagic
+        let isAltMagic    = magicHex = LibFFXIV.Network.Constants.FFXIVBasePacketMagicAlt
         if not (isNormalMagic || isAltMagic) then
             failwithf "Packet magic mismatch! %s : %s" magicHex (HexString.ToHex(bytes))
 

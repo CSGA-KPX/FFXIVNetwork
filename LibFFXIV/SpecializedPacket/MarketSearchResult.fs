@@ -1,7 +1,7 @@
-namespace LibFFXIV.SpecializedPacket
+namespace LibFFXIV.Network.SpecializedPacket
 open Microsoft.FSharp.Core.Operators.Checked
 open System
-open LibFFXIV.Utils
+open LibFFXIV.Network.Utils
 
 type MarketListRecord = 
     {

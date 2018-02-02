@@ -3,8 +3,8 @@ open System
 open System.Text
 open System.Reflection
 open System.Collections.Generic
-open LibFFXIV.BasePacket
-open LibFFXIV.Constants
+open LibFFXIV.Network.BasePacket
+open LibFFXIV.Network.Constants
 
 type StringBuilder = B of (Text.StringBuilder -> unit)
 
@@ -35,7 +35,7 @@ type StringBuilderM () =
 let sb = new StringBuilderM ()
 
 [<AttributeUsageAttribute(AttributeTargets.Method)>]
-type PacketHandleMethodAttribute(opcode : LibFFXIV.Constants.Opcodes) = 
+type PacketHandleMethodAttribute(opcode : LibFFXIV.Network.Constants.Opcodes) = 
     inherit System.Attribute()
 
     member x.OpCode with get() = opcode
@@ -59,9 +59,10 @@ type PacketReceivedEvent() =
 
 
 type PacketHandler() as x = 
-    let handlers   = new Dictionary<LibFFXIV.Constants.Opcodes, (PacketHandlerBase *  MethodInfo)>()
+    let handlers   = new Dictionary<LibFFXIV.Network.Constants.Opcodes, (PacketHandlerBase *  MethodInfo)>()
     let logger     = NLog.LogManager.GetCurrentClassLogger()
     let plogger    = NLog.LogManager.GetLogger("PacketLogger")
+    let rawLogger    = NLog.LogManager.GetLogger("RawTCPPacket")
 
     do
         x.AddAssembly(Assembly.GetExecutingAssembly())
@@ -88,8 +89,8 @@ type PacketHandler() as x =
         let data   = Utils.HexString.ToHex (gp.Data)
         let dir    = 
             match direction with
-            | LibFFXIV.TcpPacket.PacketDirection.In  -> "<<<<<"
-            | LibFFXIV.TcpPacket.PacketDirection.Out -> ">>>>>"
+            | LibFFXIV.Network.TcpPacket.PacketDirection.In  -> "<<<<<"
+            | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ">>>>>"
         plogger.Trace("GamePacket:{6} MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx + 1, total + 1, data, gp.Magic, dir)
 
     member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction) = 
@@ -98,13 +99,12 @@ type PacketHandler() as x =
         let data   = Utils.HexString.ToHex (gp.Data)
         let dir    = 
             match direction with
-            | LibFFXIV.TcpPacket.PacketDirection.In  -> "<<<<<"
-            | LibFFXIV.TcpPacket.PacketDirection.Out -> ">>>>>"
+            | LibFFXIV.Network.TcpPacket.PacketDirection.In  -> "<<<<<"
+            | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ">>>>>"
         plogger.Trace("GamePacket:{6} MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, 0, 0, data, gp.Magic, dir)
 
-    member x.HandlePacketMachina (epoch : int64, data : byte [], direction : LibFFXIV.TcpPacket.PacketDirection) = 
+    member x.HandlePacketMachina (epoch : int64, data : byte [], direction : LibFFXIV.Network.TcpPacket.PacketDirection) = 
         try
-
             let sp = FFXIVSubPacket.Parse(data).[0] //TODO
             let spType = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
             match spType with
@@ -118,15 +118,16 @@ type PacketHandler() as x =
             | PacketTypes.ServerHandShake
                 -> ()
             | PacketTypes.GameMessage ->
+                rawLogger.Trace(Utils.HexString.ToHex(sp.Data))
                 let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
                 x.LogGamePacketOne(gp, direction)
                 match direction with
-                | LibFFXIV.TcpPacket.PacketDirection.In  ->
+                | LibFFXIV.Network.TcpPacket.PacketDirection.In  ->
                     let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
                     if handlers.ContainsKey(op) then
                         let (obj, method) = handlers.[op]
                         method.Invoke(obj, [| box gp |]) |> ignore
-                | LibFFXIV.TcpPacket.PacketDirection.Out -> ()
+                | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ()
             | _ -> failwithf "未知子包类型%O" spType
             
         with

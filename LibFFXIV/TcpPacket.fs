@@ -1,7 +1,7 @@
-﻿module LibFFXIV.TcpPacket
+﻿module LibFFXIV.Network.TcpPacket
 open System
-open LibFFXIV.Utils
-open LibFFXIV.BasePacket
+open LibFFXIV.Network.Utils
+open LibFFXIV.Network.BasePacket
 
 type PacketDirection = 
     | In

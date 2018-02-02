@@ -1,5 +1,5 @@
-namespace LibFFXIV.BasePacket
-open LibFFXIV.Utils
+namespace LibFFXIV.Network.BasePacket
+open LibFFXIV.Network.Utils
 
 type FFXIVGamePacket = 
     {

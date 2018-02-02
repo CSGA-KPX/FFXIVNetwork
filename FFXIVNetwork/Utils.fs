@@ -4,7 +4,7 @@ open System.Net
 open System.Net.Sockets
 let logger = NLog.LogManager.GetCurrentClassLogger()
 
-type HexString = LibFFXIV.Utils.HexString
+type HexString = LibFFXIV.Network.Utils.HexString
 
 module UAC = 
     open System

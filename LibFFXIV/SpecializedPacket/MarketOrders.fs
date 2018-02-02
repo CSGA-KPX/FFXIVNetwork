@@ -1,6 +1,6 @@
-namespace LibFFXIV.SpecializedPacket
+namespace LibFFXIV.Network.SpecializedPacket
 open System.IO
-open LibFFXIV.Utils
+open LibFFXIV.Network.Utils
 
 type MarketRecord = 
     {

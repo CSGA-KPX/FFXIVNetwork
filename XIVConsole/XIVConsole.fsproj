@@ -102,8 +102,13 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
-      <Name>LibFFXIV</Name>
+    <ProjectReference Include="..\LibFFXIV.Client\LibFFXIV.Client.fsproj">
+      <Name>LibFFXIV.Client</Name>
+      <Project>{6da83005-e663-4b66-9aa7-2a2aadb17bb3}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\LibFFXIV\LibFFXIV.Network.fsproj">
+      <Name>LibFFXIV.Network</Name>
       <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
       <Private>True</Private>
     </ProjectReference>

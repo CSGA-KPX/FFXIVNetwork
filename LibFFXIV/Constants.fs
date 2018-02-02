@@ -1,4 +1,4 @@
-﻿module LibFFXIV.Constants
+﻿module LibFFXIV.Network.Constants
 
 type Opcodes = 
     | TradeLogInfo = 0x00E1us 

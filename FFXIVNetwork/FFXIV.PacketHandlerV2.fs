@@ -3,10 +3,10 @@ open System
 open System.Text
 open FFXIV.PacketHandlerBase
 
-open LibFFXIV.Constants
-open LibFFXIV.BasePacket
-open LibFFXIV.SpecializedPacket
-open LibFFXIV.Database
+open LibFFXIV.Network.Constants
+open LibFFXIV.Network.BasePacket
+open LibFFXIV.Network.SpecializedPacket
+open LibFFXIV.Client.Database
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
@@ -21,13 +21,13 @@ type TradeLogPacketHandler() =
             let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
             yield "====TradeLogData===="
             for log in tradeLogs.Records do
-                let i     = SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
+                let i     = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
                 let iName = 
                     if i.IsSome then
                         i.Value.ToString()
                     else
                         sprintf "未知物品 XIVId(%i)" log.ItemID
-                let date  = LibFFXIV.Utils.TimeStamp.FromSeconds(log.TimeStamp)
+                let date  = LibFFXIV.Network.Utils.TimeStamp.FromSeconds(log.TimeStamp)
                 yield sprintf "%O %s P:%i C:%i HQ:%b Buyer:%s" date iName log.Price log.Count log.IsHQ log.BuyerName
                     
             yield "====TradeLogDataEnd===="
@@ -48,8 +48,8 @@ type MaketPacketHandler () as x =
         sb {
             yield "====MarketData===="
             for data in mr do
-                let i = SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
-                let date  = LibFFXIV.Utils.TimeStamp.FromSeconds(data.TimeStamp)
+                let i = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
+                let date  = LibFFXIV.Network.Utils.TimeStamp.FromSeconds(data.TimeStamp)
                 let price = data.Price
                 let count = data.Count
                 let isHQ  = data.IsHQ

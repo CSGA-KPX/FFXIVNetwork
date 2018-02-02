@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Name>LibFFXIV</Name>
+    <Name>LibFFXIV.Network</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -77,7 +77,6 @@
     <Compile Include="FFXIVCrypto.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="Constants.fs" />
-    <Compile Include="Database.fs" />
     <Compile Include="BasePacket\GamePacket.fs" />
     <Compile Include="BasePacket\SubPacket.fs" />
     <Compile Include="BasePacket\BasePacket.fs" />
@@ -102,7 +101,6 @@
       <HintPath>z:\KPX\Documents\Visual Studio 2017\Projects\FFXIVNetwork\packages\NLog.4.4.10\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
@@ -112,13 +110,6 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="K:\Apps\SaintCoinach\SaintCoinach\SaintCoinach.csproj">
-      <Name>SaintCoinach (SaintCoinach\SaintCoinach)</Name>
-      <Project>{8a7d65eb-3de3-4631-b286-cc73a3126002}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

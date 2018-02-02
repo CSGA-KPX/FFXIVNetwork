@@ -100,6 +100,16 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LibFFXIV.Client\LibFFXIV.Client.fsproj">
+      <Name>LibFFXIV.Client</Name>
+      <Project>{6da83005-e663-4b66-9aa7-2a2aadb17bb3}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\LibFFXIV\LibFFXIV.Network.fsproj">
+      <Name>LibFFXIV.Network</Name>
+      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Machina\Machina.FFXIV\Machina.FFXIV.csproj">
       <Name>Machina.FFXIV</Name>
       <Project>{4303e4f0-4c90-44eb-90c2-691451fe49e7}</Project>
@@ -132,11 +142,6 @@
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV.fsproj">
-      <Name>LibFFXIV</Name>
-      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\LibXIVDMF\LibXIVDMF.fsproj">
       <Name>LibXIVDMF</Name>
       <Project>{8a3c2b67-647d-431a-9ac1-7695667b0de7}</Project>

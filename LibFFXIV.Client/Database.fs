@@ -1,4 +1,4 @@
-﻿module LibFFXIV.Database
+﻿module LibFFXIV.Client.Database
 open System
 open System.Collections.Generic
 
