@@ -57,6 +57,8 @@ type TimeStamp(utc : DateTime) =
 
     static member UTC = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
 
+    static member Now = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds |> int32;
+
     static member FromSeconds(sec : uint32) = 
         new TimeStamp(TimeStamp.UTC.AddSeconds(sec |> float))
 

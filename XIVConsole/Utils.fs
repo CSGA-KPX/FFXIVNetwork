@@ -5,7 +5,7 @@ open LibFFXIV.Network
 
 type DisplayOP = 
     | Query  of string * Database.ItemRecord * float
-    | Result of string * LibXIVDMF.Market.MarketFetchResult * float
+    | Result of string * LibXIVServer.MarketV2.MarketFetchRawResult * float
     | BeginSum
     | EndSum of string
     | EmptyLine
@@ -14,7 +14,7 @@ type DisplayOP =
     member x.Fetch() = 
         match x with
         | Query (str, item, count) -> 
-            let market = LibXIVDMF.Market.FetchMarketData(item)
+            let market = LibXIVServer.MarketV2.GetRawOrders(item.Id)
             Result (str, market, count)
         | _ -> x
 

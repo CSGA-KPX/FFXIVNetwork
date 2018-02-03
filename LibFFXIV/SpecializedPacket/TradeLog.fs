@@ -5,6 +5,7 @@ open System.IO
 open System.Text
 open LibFFXIV.Network.Utils
 
+[<CLIMutableAttribute>]
 type TradeLogRecord = 
     {
         ItemID      : uint32

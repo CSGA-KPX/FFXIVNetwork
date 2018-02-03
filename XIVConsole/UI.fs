@@ -116,7 +116,7 @@ type MainForm () as this =
         let buf = Collections.Generic.List<ListViewItem>()
         let addList query iname std count total update = 
             buf.Add(new ListViewItem([| query; iname; std; count; total; update |]))
-
+        let saint = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance()
         //先把文本查询转换好
         let queries = 
             queries
@@ -138,15 +138,15 @@ type MainForm () as this =
                     sum <- sum + total
                     addList
                         name
-                        (res.Item.Name)
+                        (saint.FromId(res.ItemId).Value.Name)
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
-                        res.Updated
+                        res.UpdateDate
                 | Utils.DisplayOP.Result (name, res, count) when not res.Success ->
                     addList
                         name
-                        (res.Item.Name)
+                        (saint.FromId(res.ItemId).Value.Name)
                         "暂缺"
                         (String.Format("{0:0.###}", count))
                         "--"

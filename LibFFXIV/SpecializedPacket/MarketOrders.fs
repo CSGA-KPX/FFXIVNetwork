@@ -2,27 +2,36 @@ namespace LibFFXIV.Network.SpecializedPacket
 open System.IO
 open LibFFXIV.Network.Utils
 
+[<CLIMutableAttribute>]
 type MarketRecord = 
     {
-        Unknown1 : byte [] //32 byte unknown
-        Price    : uint32
-        Unknown2 : uint32
-        Count    : uint32
-        Itemid   : uint32
+        OrderID     : uint32
+        Unknown1    : uint32
+        RetainerID  : uint64
+        UserID      : uint64
+        SignUserID  : uint64 //道具制作者签名
+        Price       : uint32
+        Unknown2    : uint32
+        Count       : uint32
+        Itemid      : uint32
         ///最后访问雇员的日期
-        TimeStamp: uint32
-        Unknown3 : byte [] //24 byte unknown
-        Name     : string  //32 byte zero-ter UTF8雇员名称
-        IsHQ     : bool    // 1 byte
-        MeldCount: byte    // 1 byte
-        Market   : byte    // 1 byte
-        Unknown4 : byte    // 1 byte
+        TimeStamp   : uint32
+        Unknown3    : byte [] //24 byte unknown
+        Name        : string  //32 byte zero-ter UTF8雇员名称
+        IsHQ        : bool    // 1 byte
+        MeldCount   : byte    // 1 byte
+        Market      : byte    // 1 byte
+        Unknown4    : byte    // 1 byte
     }
 
     static member ParseFromBytes(bytes : byte[]) = 
         use r  = XIVBinaryReader.FromBytes(bytes)
         {
-            Unknown1  = r.ReadBytes(32)
+            OrderID      = r.ReadUInt32()
+            Unknown1     = r.ReadUInt32()
+            RetainerID   = r.ReadUInt64()
+            UserID       = r.ReadUInt64()
+            SignUserID   = r.ReadUInt64()
             Price     = r.ReadUInt32()
             Unknown2  = r.ReadUInt32()
             Count     = r.ReadUInt32()

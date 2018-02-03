@@ -112,8 +112,8 @@
       <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\LibXIVDMF\LibXIVDMF.fsproj">
-      <Name>LibXIVDMF</Name>
+    <ProjectReference Include="..\LibXIVDMF\LibXIVServer.fsproj">
+      <Name>LibXIVServer</Name>
       <Project>{8a3c2b67-647d-431a-9ac1-7695667b0de7}</Project>
       <Private>True</Private>
     </ProjectReference>

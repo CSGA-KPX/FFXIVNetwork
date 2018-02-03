@@ -12,9 +12,9 @@
 
 open System
 open System.IO
-open LibFFXIV.BasePacket
-open LibFFXIV.SpecializedPacket
-open LibFFXIV.Utils
+open LibFFXIV.Network.BasePacket
+open LibFFXIV.Network.SpecializedPacket
+open LibFFXIV.Network.Utils
 
 let UTF8  = Text.Encoding.UTF8
 let ParseString(str) = FFXIVBasePacket.ParseFromBytes(HexString.ToBytes(str))

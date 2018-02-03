@@ -17,8 +17,9 @@ type TradeLogPacketHandler() =
 
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData)>]
     member x.HandleData (gp) = 
+        let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
+        LibXIVServer.TradeLogV2.PutTradeLog(tradeLogs.Records)
         sb {
-            let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
             yield "====TradeLogData===="
             for log in tradeLogs.Records do
                 let i     = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
@@ -42,6 +43,7 @@ type MaketPacketHandler () as x =
 
     do
         queue.NewCompleteDataEvent.Add(x.LogMarketData)
+        queue.NewCompleteDataEvent.Add(x.LogMarketRecords)
         queue.NewCompleteDataEvent.Add(x.UploadMarketData)
 
     member x.LogMarketData (mr : MarketRecord []) = 
@@ -62,11 +64,15 @@ type MaketPacketHandler () as x =
                 yield sprintf "%O %s P:%i C:%i HQ:%b Meld:%i Seller:%s" date str price count isHQ meld (data.Name)
             yield "====MarketDataEnd===="
         } |> buildString |> x.Logger.Info
+    member x.LogMarketRecords (mr : MarketRecord []) = 
+        for m in mr do 
+            x.Logger.Trace(sprintf "%A" m)
 
     member x.UploadMarketData (mr : MarketRecord []) = 
         Threading.ThreadPool.QueueUserWorkItem(fun _ -> 
             NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-            LibXIVDMF.Market.SubmitMarketData(mr)
+            LibXIVServer.MarketV2.PutRawOrders(mr)
+            //LibXIVDMF.Market.SubmitMarketData(mr)
         ) |> ignore
 
     [<PacketHandleMethodAttribute(Opcodes.Market)>]
