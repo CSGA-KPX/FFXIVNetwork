@@ -116,7 +116,7 @@ type MainForm () as this =
         let buf = Collections.Generic.List<ListViewItem>()
         let addList query iname std count total update = 
             buf.Add(new ListViewItem([| query; iname; std; count; total; update |]))
-        let saint = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance()
+        let saint = LibFFXIV.Client.Item.SaintCoinachItemProvider.GetInstance()
         //先把文本查询转换好
         let queries = 
             queries

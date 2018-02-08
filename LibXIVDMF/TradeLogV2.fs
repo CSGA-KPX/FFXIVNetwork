@@ -2,10 +2,8 @@
 open System
 open System.Net.Http
 open MBrace.FsPickler
-open MBrace.FsPickler.Json
 open System.Net.Http.Headers
 open LibFFXIV.Network
-open LibFFXIV.Client
 open LibXIVServer.Common
 
 //marketlogs/

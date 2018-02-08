@@ -6,6 +6,8 @@ let logger = NLog.LogManager.GetCurrentClassLogger()
 
 type HexString = LibFFXIV.Network.Utils.HexString
 
+let UploadClientData = true
+
 module UAC = 
     open System
     open System.Diagnostics

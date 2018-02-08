@@ -1,12 +1,11 @@
 ﻿module FFXIV.LobbyPacketHandler
 open System
-open System.Text
 open FFXIV.PacketHandlerBase
 
 open LibFFXIV.Network.Constants
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
-open LibFFXIV.Client.Database
+open LibFFXIV.Client.Item
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
@@ -18,11 +17,10 @@ type TradeLogPacketHandler() =
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData)>]
     member x.HandleData (gp) = 
         let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
-        LibXIVServer.TradeLogV2.PutTradeLog(tradeLogs.Records)
         sb {
             yield "====TradeLogData===="
             for log in tradeLogs.Records do
-                let i     = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
+                let i     = SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
                 let iName = 
                     if i.IsSome then
                         i.Value.ToString()
@@ -36,6 +34,11 @@ type TradeLogPacketHandler() =
         |> buildString
         |> x.Logger.Info
 
+        if Utils.UploadClientData then
+            LibXIVServer.TradeLogV2.PutTradeLog(tradeLogs.Records)
+
+
+
 type MaketPacketHandler () as x = 
     inherit PacketHandlerBase()
 
@@ -44,13 +47,14 @@ type MaketPacketHandler () as x =
     do
         queue.NewCompleteDataEvent.Add(x.LogMarketData)
         queue.NewCompleteDataEvent.Add(x.LogMarketRecords)
-        queue.NewCompleteDataEvent.Add(x.UploadMarketData)
+        if Utils.UploadClientData then
+            queue.NewCompleteDataEvent.Add(x.UploadMarketData)
 
     member x.LogMarketData (mr : MarketRecord []) = 
         sb {
             yield "====MarketData===="
             for data in mr do
-                let i = LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
+                let i = SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
                 let date  = LibFFXIV.Network.Utils.TimeStamp.FromSeconds(data.TimeStamp)
                 let price = data.Price
                 let count = data.Count
@@ -72,7 +76,6 @@ type MaketPacketHandler () as x =
         Threading.ThreadPool.QueueUserWorkItem(fun _ -> 
             NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
             LibXIVServer.MarketV2.PutRawOrders(mr)
-            //LibXIVDMF.Market.SubmitMarketData(mr)
         ) |> ignore
 
     [<PacketHandleMethodAttribute(Opcodes.Market)>]

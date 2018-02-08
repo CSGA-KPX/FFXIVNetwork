@@ -54,7 +54,10 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Utils.fs" />
-    <Compile Include="Database.fs" />
+    <Compile Include="Item.fs" />
+    <Compile Include="Recipe.fs" />
+    <Compile Include="ShopNPC.fs" />
+    <Compile Include="ClientInfo.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

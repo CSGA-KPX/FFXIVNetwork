@@ -4,7 +4,7 @@ open LibFFXIV.Client
 open LibFFXIV.Network
 
 type DisplayOP = 
-    | Query  of string * Database.ItemRecord * float
+    | Query  of string * Item.ItemRecord * float
     | Result of string * LibXIVServer.MarketV2.MarketFetchRawResult * float
     | BeginSum
     | EndSum of string
@@ -43,8 +43,8 @@ type StringQuery =
         | MaterialsRecGroup x -> x
 
     member x.GetOP() = 
-        let item = Database.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
-        let rm = Database.RecipeManager.GetInstance()
+        let item = Item.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
+        let rm = Recipe.RecipeManager.GetInstance()
         if item.IsNone then
             [|
                 Error (sprintf "找不到物品%A" x)

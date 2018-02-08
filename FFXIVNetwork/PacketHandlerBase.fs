@@ -46,18 +46,6 @@ type PacketHandlerBase() as x =
 
     member internal x.Logger = logger
 
-
-(*
-type PacketReceivedEvent() = 
-    let event = new Event<FFXIVGamePacket>()
-
-    member x.AddHandler(func) = 
-        Event.add func event.Publish
-    
-    member x.Trigger(p : FFXIVGamePacket) = 
-        event.Trigger(p)*)
-
-
 type PacketHandler() as x = 
     let handlers   = new Dictionary<LibFFXIV.Network.Constants.Opcodes, (PacketHandlerBase *  MethodInfo)>()
     let logger     = NLog.LogManager.GetCurrentClassLogger()

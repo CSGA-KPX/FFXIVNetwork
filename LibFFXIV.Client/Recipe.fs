@@ -1,78 +1,7 @@
-﻿module LibFFXIV.Client.Database
+﻿module LibFFXIV.Client.Recipe
 open System
 open System.Collections.Generic
-
-let internal tryGetToOption (x : bool, y: 'Value) = 
-    if x then
-        Some(y)
-    else
-        None
-
-type ItemRecord = 
-    {
-        Id      : int
-        Name : string
-    }
-
-    override x.ToString() = 
-        sprintf "%s(%i)" x.Name x.Id
-
-    static member GetUnknown(lodeId) = 
-        {
-            Id      = -1
-            Name = "未知"
-        }
-
-type SaintCoinachInstance private() = 
-    static let gameDirectory = Utils.GetXIVGamePath()
-    static let instance = 
-            SaintCoinach.ARealmReversed(gameDirectory, SaintCoinach.Ex.Language.ChineseSimplified)
-    static member Instance = instance
-
-type IItemProvider = 
-        abstract FromName : string -> ItemRecord option
-        abstract FromId   :    int -> ItemRecord option
-        abstract Version  : string
-
-type SaintCoinachItemProvider private() = 
-    let version  = SaintCoinachInstance.Instance.GameVersion
-    let fromName = new Dictionary<string, ItemRecord>()
-    let fromId   = new Dictionary<int   , ItemRecord>()
-    let logger   = NLog.LogManager.GetCurrentClassLogger()
-    let manualMapping =
-        [|
-            {Id = 14928; Name = "长颈驼革手套";}    , {Id = 14928; Name = "长颈驼革手套时装";}
-            {Id = 16604; Name = "鹰翼手铠";}        , {Id = 16604; Name = "鹰翼手铠时装";}
-            {Id = 13741; Name = "管家之王证书";}    , {Id = 13741; Name = "过期的管家之王证书";}
-            {Id = 18491; Name = "游牧御敌头盔";}    , {Id = 18491; Name = "游牧御敌头盔时装";}
-            {Id = 17915; Name = "迦迦纳怪鸟的粗皮";}, {Id = 17915; Name = "大迦迦纳怪鸟的粗皮";}
-            {Id = 20561; Name = "东方装甲";}        , {Id = 20561; Name = "东国装甲";}
-        |] |> dict
-    do
-        for item in SaintCoinachInstance.Instance.GameData.Items do 
-            if not item.Name.IsEmpty then
-                let ir = 
-                    let t = {ItemRecord.Id = item.Key; ItemRecord.Name = item.Name.ToString()}
-                    if manualMapping.ContainsKey(t) then
-                        manualMapping.[t]
-                    else
-                        t
-                
-                fromId.Add(ir.Id, ir)
-                if fromName.ContainsKey(ir.Name) then
-                    let current = fromName.[ir.Name]
-                    logger.Fatal(sprintf "存在已物品，%O -> %O" current ir)
-                else
-                    fromName.Add(ir.Name, ir)
-
-    static let instance = new SaintCoinachItemProvider() :> IItemProvider
-
-    static member GetInstance() = instance
-    
-    interface IItemProvider with
-        member x.Version = version
-        member x.FromName (name) = fromName.TryGetValue(name) |> tryGetToOption
-        member x.FromId (id)     = fromId.TryGetValue(id) |> tryGetToOption
+open LibFFXIV.Client.Item
 
 type RecipeRecord = 
     {
@@ -84,7 +13,7 @@ type RecipeRecord =
 type IRecipeProvider = 
     abstract TryGetRecipe : ItemRecord -> RecipeRecord option
 
-type FinalMaterials () = 
+type internal FinalMaterials () = 
     let m = new Dictionary<ItemRecord, float>()
 
     member x.AddOrUpdate(item, runs) = 
@@ -99,14 +28,13 @@ type FinalMaterials () =
                 yield (kv.Key, kv.Value)
         |]
 
-
-type SaintCoinachRecipeProvider() = 
-    let version  = SaintCoinachInstance.Instance.GameVersion
+type internal SaintCoinachRecipeProvider() = 
+    let version  = Utils.SaintCoinachInstance.Instance.GameVersion
     let logger   = NLog.LogManager.GetCurrentClassLogger()
     let dict     = new Dictionary<int, RecipeRecord>()
 
     do
-        let recipes = SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.Recipe>()
+        let recipes = Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.Recipe>()
         for recipe in recipes do 
             //部分道具具有多个配方，但材料差不多
             if not (dict.ContainsKey(recipe.ResultItem.Key)) then
@@ -125,15 +53,15 @@ type SaintCoinachRecipeProvider() =
                 dict.Add(recipe.ResultItem.Key, r)
     
     interface IRecipeProvider with
-        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> tryGetToOption
+        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> Utils.TryGetToOption
 
-type SaintCoinachCompanyRecipeProvider() = 
-    let version  = SaintCoinachInstance.Instance.GameVersion
+type internal SaintCoinachCompanyRecipeProvider() = 
+    let version  = Utils.SaintCoinachInstance.Instance.GameVersion
     let logger   = NLog.LogManager.GetCurrentClassLogger()
     let dict     = new Dictionary<int, RecipeRecord>()
     do
         let recipes = 
-            SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.CompanyCraftSequence>()
+            Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.CompanyCraftSequence>()
             |> Seq.toArray
             |> (fun x -> x.[1..])
         for recipe in recipes do 
@@ -155,7 +83,7 @@ type SaintCoinachCompanyRecipeProvider() =
             dict.Add(ikey, {Materials = m.Get(); ProductCount = 1.0})
 
     interface IRecipeProvider with
-        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> tryGetToOption
+        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> Utils.TryGetToOption
 
 type RecipeManager private () = 
     let providers = System.Collections.Generic.HashSet<IRecipeProvider>()

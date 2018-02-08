@@ -13,8 +13,12 @@ let main argv =
     )
     logger.Info("正在加载数据")
     try
-        LibFFXIV.Client.Database.SaintCoinachItemProvider.GetInstance() |> ignore
+        LibFFXIV.Client.Item.SaintCoinachItemProvider.GetInstance() |> ignore
         logger.Info("数据加载结束")
+
+        if LibFFXIV.Client.ClientInfo.ClientVersion <> LibFFXIV.Network.Constants.TargetClientVersion then
+            failwithf "客户端版本与数据包定义版本不匹配，请等待更新"
+
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
         let monitor = new Machina.FFXIV.FFXIVNetworkMonitor()

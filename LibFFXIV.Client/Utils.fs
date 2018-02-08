@@ -2,7 +2,12 @@
 open System
 open System.Configuration
 open System.IO
-open System.Text
+
+let internal TryGetToOption (x : bool, y: 'Value) = 
+    if x then
+        Some(y)
+    else
+        None
 
 let internal IsXIVGamePath (path) = 
     IO.File.Exists(path + @"\game\ffxiv.exe")
@@ -47,3 +52,9 @@ let GetXIVGamePath() =
         else
             GetXIVGamePathUI()
     
+
+type SaintCoinachInstance private() = 
+    static let gameDirectory = GetXIVGamePath()
+    static let instance = 
+            SaintCoinach.ARealmReversed(gameDirectory, SaintCoinach.Ex.Language.ChineseSimplified)
+    static member Instance = instance

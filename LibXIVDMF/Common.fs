@@ -6,7 +6,9 @@ open MBrace.FsPickler.Json
 open System.Net.Http.Headers
 
 
-let APIHost = "http://127.0.0.1:5000"
+let APIHost = 
+    //"http://127.0.0.1:5000"
+    "https://xivnet.danmaku.org"
 
 let ToJson = FsPickler.CreateJsonSerializer(false, true)
 
