@@ -109,15 +109,18 @@ type PacketHandler() as x =
                 rawLogger.Trace(Utils.HexString.ToHex(sp.Data))
                 let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
                 x.LogGamePacketOne(gp, direction)
-                match direction with
-                | LibFFXIV.Network.TcpPacket.PacketDirection.In  ->
-                    let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
-                    if handlers.ContainsKey(op) then
-                        let (obj, method) = handlers.[op]
-                        method.Invoke(obj, [| box gp |]) |> ignore
-                | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ()
+                try
+                    match direction with
+                    | LibFFXIV.Network.TcpPacket.PacketDirection.In  ->
+                        let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
+                        if handlers.ContainsKey(op) then
+                            let (obj, method) = handlers.[op]
+                            method.Invoke(obj, [| box gp |]) |> ignore
+                    | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ()
+                with
+                | e -> logger.Error("数据包处理错误:{0}, {1}", e.ToString(), sprintf "%A" gp)
             | _ -> failwithf "未知子包类型%O" spType
             
         with
         | e ->  
-            logger.Error("Error packet:{0}", Utils.HexString.ToHex(data))
+            logger.Error("Error packet:{0}, {1}", e.ToString(), Utils.HexString.ToHex(data))
