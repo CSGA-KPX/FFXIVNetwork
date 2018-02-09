@@ -75,6 +75,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="MarketV2.fs" />
     <Compile Include="TradeLogV2.fs" />
+    <Compile Include="UsernameMapping.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

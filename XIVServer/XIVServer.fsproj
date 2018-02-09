@@ -62,6 +62,7 @@
     <Compile Include="Global.fs" />
     <Compile Include="TradeLog.fs" />
     <Compile Include="MarketOrders.fs" />
+    <Compile Include="UsernameMapping.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />

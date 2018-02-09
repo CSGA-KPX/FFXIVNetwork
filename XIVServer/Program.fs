@@ -3,6 +3,26 @@ open System.Threading
 open Nancy.Hosting.Self
 open Mono.Unix
 open Mono.Unix.Native
+open Newtonsoft.Json
+open Newtonsoft.Json.Serialization
+open Nancy
+open Nancy.Configuration
+open Nancy.Json
+
+type CustomJsonSerializer() = 
+    inherit JsonSerializer()
+
+    member x.CustomJsonSerializer() = 
+        x.ContractResolver <- new CamelCasePropertyNamesContractResolver()
+
+type Bootstrapper()  =
+    inherit DefaultNancyBootstrapper()
+    do
+        ()
+
+    override x.Configure(e) = 
+        e.Json(retainCasing = new System.Nullable<bool>(true))
+        base.Configure(e)
 
 [<EntryPoint>]
 let main argv = 

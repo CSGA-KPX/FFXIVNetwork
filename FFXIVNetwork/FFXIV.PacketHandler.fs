@@ -1,4 +1,4 @@
-﻿module FFXIV.LobbyPacketHandler
+﻿module FFXIV.PacketHandler
 open System
 open FFXIV.PacketHandlerBase
 
@@ -6,6 +6,35 @@ open LibFFXIV.Network.Constants
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
 open LibFFXIV.Client.Item
+open System.Collections.Generic
+open System.Collections.Generic
+
+type ChatHandler() = 
+    inherit PacketHandlerBase()
+
+    let cache = new HashSet<uint64>()
+
+    [<PacketHandleMethodAttribute(Opcodes.Chat)>]
+    member x.HandleChat(gp) = 
+        let r = Chat.ParseFromBytes(gp.Data)
+        let ct = Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<uint16, ChatType>(r.ChatType)
+        x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.Username, r.UserID, r.ServerID, r.Text)
+
+        if not <| cache.Contains(r.UserID) then
+            LibXIVServer.UsernameMapping.PutUsername({UserID = r.UserID; Username = r.Username})
+            cache.Add(r.UserID) |> ignore
+
+type CharacterNameLookupReplyHandler() = 
+    inherit PacketHandlerBase()
+
+    [<PacketHandleMethodAttribute(Opcodes.CharacterNameLookupReply)>]
+    member x.HandleReply(gp) = 
+        let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
+        x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
+        
+        LibXIVServer.UsernameMapping.PutUsername(r)
+        //TODO upload
+
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
