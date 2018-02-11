@@ -56,14 +56,12 @@ type DAOQueue private () =
     let logger = NLog.LogManager.GetCurrentClassLogger()
     do
         let rec ts() = 
-            let succ, t = queue.TryTake()
-            if succ then
-                try
-                    retry { return t() } |> ignore
-                with
-                | RetryLimitExceeded -> logger.Error("任务无法完成")
-            else
-                ts()
+            let t = queue.Take()
+            try
+                retry { return t() } |> ignore
+            with
+            | RetryLimitExceeded -> logger.Error("任务无法完成")
+            ts()
         let t = new Thread(ts)
         t.Start()
 

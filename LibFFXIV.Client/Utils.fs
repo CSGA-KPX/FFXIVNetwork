@@ -9,6 +9,18 @@ let internal TryGetToOption (x : bool, y: 'Value) =
     else
         None
 
+type ClientSetting private () = 
+    inherit ApplicationSettingsBase()
+
+    static let instance = new ClientSetting()
+    static member Instance = instance
+
+    [<UserScopedSetting>]
+    [<DefaultSettingValue("")>]
+    member this.XIVGamePath
+        with get() = this.Item("XIVGamePath") :?> string
+        and set(value : string) = this.Item("XIVGamePath") <- value
+
 let internal IsXIVGamePath (path) = 
     IO.File.Exists(path + @"\game\ffxiv.exe")
 
@@ -23,35 +35,19 @@ let rec internal GetXIVGamePathUI () =
             && IsXIVGamePath(d.SelectedPath)
         if isOK then 
             try
-                let file = ConfigurationManager.OpenExeConfiguration(System.Windows.Forms.Application.ExecutablePath)
-                let cfg  = file.AppSettings.Settings
-                cfg.Remove("XIVGAMEPATH")
-                cfg.Add("XIVGAMEPATH", d.SelectedPath)
-                file.Save(ConfigurationSaveMode.Modified)
-                ConfigurationManager.RefreshSection(file.AppSettings.SectionInformation.Name)
+                ClientSetting.Instance.XIVGamePath <- d.SelectedPath
+                ClientSetting.Instance.Save()
             with
             | e -> printfn "%O" e
             d.SelectedPath
         else
             GetXIVGamePathUI()
 
-///For fsi use
-let mutable XIVGamePath = @""
-
 let GetXIVGamePath() = 
-    if IsXIVGamePath(XIVGamePath) then
-        XIVGamePath
+    if IsXIVGamePath(ClientSetting.Instance.XIVGamePath) then
+        ClientSetting.Instance.XIVGamePath
     else
-        let key = "XIVGAMEPATH"
-        let file = ConfigurationManager.OpenExeConfiguration(System.Windows.Forms.Application.ExecutablePath)
-        let cfg  = file.AppSettings.Settings
-        let path = cfg.[key]
-        let isOK = (not (isNull path)) && IsXIVGamePath(path.Value)
-        if isOK then
-            path.Value
-        else
-            GetXIVGamePathUI()
-    
+        GetXIVGamePathUI()
 
 type SaintCoinachInstance private() = 
     static let gameDirectory = GetXIVGamePath()

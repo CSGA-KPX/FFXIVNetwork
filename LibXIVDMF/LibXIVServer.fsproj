@@ -76,6 +76,7 @@
     <Compile Include="MarketV2.fs" />
     <Compile Include="TradeLogV2.fs" />
     <Compile Include="UsernameMapping.fs" />
+    <Compile Include="Analyzing.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

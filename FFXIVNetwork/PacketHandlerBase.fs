@@ -71,16 +71,6 @@ type PacketHandler() as x =
                         let at = at :?> PacketHandleMethodAttribute
                         handlers.Add(at.OpCode, (instance, m))
 
-    member private x.LogGamePacket (idx, total, gp : FFXIVGamePacket, direction) = 
-        let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
-        let ts     = gp.TimeStamp
-        let data   = Utils.HexString.ToHex (gp.Data)
-        let dir    = 
-            match direction with
-            | LibFFXIV.Network.TcpPacket.PacketDirection.In  -> "<<<<<"
-            | LibFFXIV.Network.TcpPacket.PacketDirection.Out -> ">>>>>"
-        plogger.Trace("GamePacket:{6} MA:{5} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, idx + 1, total + 1, data, gp.Magic, dir)
-
     member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction) = 
         let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
         let ts     = gp.TimeStamp
