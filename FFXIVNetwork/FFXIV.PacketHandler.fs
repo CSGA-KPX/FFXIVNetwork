@@ -20,7 +20,7 @@ type ChatHandler() =
         let ct = Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<uint16, ChatType>(r.ChatType)
         x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.Username, r.UserID, r.ServerID, r.Text)
 
-        if not <| cache.Contains(r.UserID) then
+        if (not <| cache.Contains(r.UserID)) && Utils.UploadClientData then
             LibXIVServer.UsernameMapping.PutUsername({UserID = r.UserID; Username = r.Username})
             cache.Add(r.UserID) |> ignore
 
@@ -32,7 +32,8 @@ type CharacterNameLookupReplyHandler() =
         let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
         x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
         
-        LibXIVServer.UsernameMapping.PutUsername(r)
+        if Utils.UploadClientData then
+            LibXIVServer.UsernameMapping.PutUsername(r)
         //TODO upload
 
 

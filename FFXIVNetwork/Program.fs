@@ -17,7 +17,9 @@ let main argv =
         logger.Info("数据加载结束")
 
         if LibFFXIV.Client.ClientInfo.ClientVersion <> LibFFXIV.Network.Constants.TargetClientVersion then
-            failwithf "客户端版本与数据包定义版本不匹配，请等待更新"
+            Utils.UploadClientData <- false
+            printfn "客户端版本与数据包定义版本不匹配，已禁用数据上传"
+            printfn "当前版本 %s" LibFFXIV.Client.ClientInfo.ClientVersion
 
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()

@@ -3,7 +3,7 @@ open System
 open System.Configuration
 open System.IO
 
-let internal TryGetToOption (x : bool, y: 'Value) = 
+let TryGetToOption (x : bool, y: 'Value) = 
     if x then
         Some(y)
     else
