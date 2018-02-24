@@ -3,9 +3,11 @@ open System
 open LibFFXIV.Client
 open LibFFXIV.Network
 
+let dao = new LibXIVServer.MarketV2.MarketOrderDAO()
+
 type DisplayOP = 
     | Query  of string * Item.ItemRecord * float
-    | Result of string * LibXIVServer.MarketV2.MarketFetchRawResult * float
+    | Result of string * Item.ItemRecord * LibXIVServer.Common.Result<SpecializedPacket.MarketRecord []> * float
     | BeginSum
     | EndSum of string
     | EmptyLine
@@ -14,8 +16,8 @@ type DisplayOP =
     member x.Fetch() = 
         match x with
         | Query (str, item, count) -> 
-            let market = LibXIVServer.MarketV2.GetRawOrders(item.Id)
-            Result (str, market, count)
+            let market = dao.Get(item.Id |> uint32)
+            Result (str, item, market, count)
         | _ -> x
 
 type StringQuery = 

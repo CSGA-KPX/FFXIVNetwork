@@ -132,21 +132,21 @@ type MainForm () as this =
                 | Utils.DisplayOP.EmptyLine ->
                     addList "" "" "" "" "" ""
                 | Utils.DisplayOP.BeginSum  -> sum <- Utils.StdEv.Zero
-                | Utils.DisplayOP.Result (name, res, count) when res.Success ->
-                    let std = Utils.GetStdEv(res.Records.Value, cutOff)
+                | Utils.DisplayOP.Result (name, item, res, count) when res.Success ->
+                    let std = Utils.GetStdEv(res.Record.Value, cutOff)
                     let total = (std * count)
                     sum <- sum + total
                     addList
                         name
-                        (saint.FromId(res.ItemId).Value.Name)
+                        (item.Name)
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
                         res.UpdateDate
-                | Utils.DisplayOP.Result (name, res, count) when not res.Success ->
+                | Utils.DisplayOP.Result (name, item, res, count) when not res.Success ->
                     addList
                         name
-                        (saint.FromId(res.ItemId).Value.Name)
+                        (item.Name)
                         "暂缺"
                         (String.Format("{0:0.###}", count))
                         "--"
