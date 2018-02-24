@@ -7,44 +7,43 @@ open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
 open LibFFXIV.Client.Item
 open System.Collections.Generic
-open System.Collections.Generic
+
 
 type ChatHandler() = 
     inherit PacketHandlerBase()
 
     let cache = new HashSet<uint64>()
+    let dao   = new LibXIVServer.UsernameMapping.UsernameMappingDAO()
 
-    [<PacketHandleMethodAttribute(Opcodes.Chat)>]
+    [<PacketHandleMethodAttribute(Opcodes.Chat, PacketDirection.In)>]
     member x.HandleChat(gp) = 
         let r = Chat.ParseFromBytes(gp.Data)
         let ct = Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<uint16, ChatType>(r.ChatType)
         x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.Username, r.UserID, r.ServerID, r.Text)
 
         if (not <| cache.Contains(r.UserID)) && Utils.UploadClientData then
-            LibXIVServer.UsernameMapping.PutUsername({UserID = r.UserID; Username = r.Username})
+            dao.Put({UserID = r.UserID; Username = r.Username})
             cache.Add(r.UserID) |> ignore
 
 type CharacterNameLookupReplyHandler() = 
     inherit PacketHandlerBase()
 
-    [<PacketHandleMethodAttribute(Opcodes.CharacterNameLookupReply)>]
+    let dao   = new LibXIVServer.UsernameMapping.UsernameMappingDAO()
+
+    [<PacketHandleMethodAttribute(Opcodes.CharacterNameLookupReply, PacketDirection.In)>]
     member x.HandleReply(gp) = 
         let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
         x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
         
         if Utils.UploadClientData then
-            LibXIVServer.UsernameMapping.PutUsername(r)
-        //TODO upload
-
+            dao.Put(r)
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
 
-    //[<PacketHandleMethodAttribute(Opcodes.TradeLogInfo)>]
-    //member x.HandleInfo (gp) = 
-    //    ()
+    let dao = new LibXIVServer.TradeLogV2.TradeLogDAO()
 
-    [<PacketHandleMethodAttribute(Opcodes.TradeLogData)>]
+    [<PacketHandleMethodAttribute(Opcodes.TradeLogData, PacketDirection.In)>]
     member x.HandleData (gp) = 
         let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
         sb {
@@ -65,20 +64,16 @@ type TradeLogPacketHandler() =
         |> x.Logger.Info
 
         if Utils.UploadClientData then
-            LibXIVServer.TradeLogV2.PutTradeLog(tradeLogs.Records)
+            let itemId = tradeLogs.ItemID
+            dao.Put(itemId, tradeLogs.Records)
 
 
 
-type MaketPacketHandler () as x = 
+type MaketPacketHandler ()= 
     inherit PacketHandlerBase()
 
-    let queue = new MarketQueue()
-
-    do
-        queue.NewCompleteDataEvent.Add(x.LogMarketData)
-        queue.NewCompleteDataEvent.Add(x.LogMarketRecords)
-        if Utils.UploadClientData then
-            queue.NewCompleteDataEvent.Add(x.UploadMarketData)
+    let arr = LibFFXIV.Network.Utils.XIVArray<MarketRecord>()
+    let dao = LibXIVServer.MarketV2.MarketOrderDAO()
 
     member x.LogMarketData (mr : MarketRecord []) = 
         sb {
@@ -103,21 +98,32 @@ type MaketPacketHandler () as x =
             x.Logger.Trace(sprintf "%A" m)
 
     member x.UploadMarketData (mr : MarketRecord []) = 
-        Threading.ThreadPool.QueueUserWorkItem(fun _ -> 
-            NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-            LibXIVServer.MarketV2.PutRawOrders(mr)
-        ) |> ignore
+        NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
+        let itemId = mr.[0].Itemid
+        dao.Put(itemId, mr)
 
-    [<PacketHandleMethodAttribute(Opcodes.Market)>]
+    [<PacketHandleMethodAttribute(Opcodes.Market, PacketDirection.In)>]
     member x.HandleMarketOrderFragment(gp) = 
         let frag = MarketPacket.ParseFromBytes(gp.Data)
-        queue.Enqueue(frag)
+        let reset = 
+            let itemID = frag.Records.[0].Itemid
+            arr.First.IsSome && (arr.First.Value.Itemid <> itemID)
+        if reset then
+            arr.Reset()
+        arr.AddSlice(frag.CurrIdx |> int, frag.NextIdx |> int, frag.Records)
+        
+        if arr.IsCompleted then
+            let data = arr.Data
+            x.LogMarketData(data)
+            x.LogMarketRecords(data)
+            if Utils.UploadClientData then
+                x.UploadMarketData(data)
 
 
 type MarketListHandler() = 
     inherit PacketHandlerBase()
 
-    [<PacketHandleMethod(Opcodes.MarketList)>]
+    [<PacketHandleMethod(Opcodes.MarketList, PacketDirection.In)>]
     member x.Handle (gp) = 
         sb {
             yield "====MarketList===="

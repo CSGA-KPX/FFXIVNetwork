@@ -24,21 +24,18 @@ let HTTPClient =
 
 exception RetryLimitExceeded
 
-type internal RetryBuilder(max) = 
-    member x.Return(a) = a               // Enable 'return'
-    member x.Delay(f) = f                // Gets wrapped body and returns it (as it is)
-                                        // so that the body is passed to 'Run'
-    member x.Zero() = x.Return(())       // Support if .. then 
-    member x.Run(f) =                    // Gets function created by 'Delay'
+type internal RetryBuilder(max, sleep : TimeSpan) = 
+      member x.Return(a) = a
+      member x.Delay(f) = f
+      member x.Zero() = x.Return ()
+      member x.Run(f) =
         let rec loop(n) = 
-            if n = 0 then
-                raise RetryLimitExceeded  // Number of retries exceeded
+            if n = 0 then raise RetryLimitExceeded
             else 
-                let t = f()
-                if t then
-                    t
-                else
-                    Thread.Sleep(3000)
+                try f() 
+                with ex -> 
+                    sprintf "Call failed with %s. Retrying." ex.Message |> printfn "%s"
+                    Thread.Sleep(sleep); 
                     loop(n-1)
         loop max
 
@@ -50,74 +47,72 @@ type Result<'T> =
         UpdateDate  : string
     }
 
-type DAOQueue private () = 
-    let queue  = new BlockingCollection<unit -> bool>()
-    let retry  = RetryBuilder(3)
-    let logger = NLog.LogManager.GetCurrentClassLogger()
-    do
-        let rec ts() = 
-            let t = queue.Take()
-            try
-                retry { return t() } |> ignore
-            with
-            | RetryLimitExceeded -> logger.Error("任务无法完成")
-            ts()
-        let t = new Thread(ts)
-        t.Start()
 
-    static let instance = new DAOQueue()
-
-    member internal x.AddTask(task) = 
-        queue.TryAdd(task) |> ignore
-
+type DAOUtils private () = 
+    let client = new HttpClient()
+    let utf8   = new Text.UTF8Encoding(false)
+    let json   = FsPickler.CreateJsonSerializer(false, true)
+    let host   = "https://xivnet.danmaku.org"
+    //let host    = "http://127.0.0.1:5000"
     
+    static let instance = new DAOUtils()
+
+    member x.HTTP       = client
+    member x.UTF8       = utf8
+    member x.JSON       = json
+    member x.Host       = host
+
     static member Instance = instance
 
 [<AbstractClassAttribute>]
-type internal DAOBase<'T>() = 
-    static let queue  = new BlockingCollection<unit -> bool>()
-    static let retry  = RetryBuilder(3)
-    static let client = new HttpClient()
-    static let utf8   = new Text.UTF8Encoding(false)
-    static let json   = FsPickler.CreateJsonSerializer(false, true)
+type DAOBase<'T>() as x = 
+    let utils = DAOUtils.Instance
 
-    abstract GetUrl : url:string * [<ParamArray>] args:Object [] -> string
-    abstract PutUrl : url:string * [<ParamArray>] args:Object [] -> string
+    let logger = NLog.LogManager.GetLogger(x.GetType().Name)
 
-    member internal x.Get(url : string) = 
-        let res = client.GetAsync(url).Result
-        let resp   = res.Content.ReadAsStringAsync().Result
-        let update = 
-            let v = res.Content.Headers.LastModified
-            if v.HasValue then
-                let t = v.Value.ToLocalTime()
-                let now = DateTimeOffset.Now
-                let diff = now - t
-                sprintf "%3i天%2i时%2i分前" (diff.Days) (diff.Hours) (diff.Minutes)
-            else
-                "N/A"
+    abstract GetUrl : [<ParamArray>] args:Object [] -> string
+    abstract PutUrl : [<ParamArray>] args:Object [] -> string
 
-        let record = 
-            if res.IsSuccessStatusCode then
-                Some(json.UnPickleOfString<'T>(resp))
-            else
-                NLog.LogManager.GetCurrentClassLogger().Info("{0}.Get() 失败 状态码：{1}",x.GetType().Name, res.StatusCode)
-                None
-        {
-            Record      = record
-            Success     = res.IsSuccessStatusCode
-            HTTPStatus  = res.StatusCode.ToString()
-            UpdateDate  = update
+
+
+    member internal x.DoGet(url : string) = 
+        async {
+            let! res = utils.HTTP.GetAsync(utils.Host + url)  |> Async.AwaitTask
+            let! resp= res.Content.ReadAsStringAsync()        |> Async.AwaitTask
+            let update = 
+                let v = res.Content.Headers.LastModified
+                if v.HasValue then
+                    let t = v.Value.ToLocalTime()
+                    let now = DateTimeOffset.Now
+                    let diff = now - t
+                    sprintf "%3i天%2i时%2i分前" (diff.Days) (diff.Hours) (diff.Minutes)
+                else
+                    "N/A"
+
+            let record = 
+                if res.IsSuccessStatusCode then
+                    Some(utils.JSON.UnPickleOfString<'T>(resp))
+                else
+                    logger.Info("{0}.Get() 失败 状态码：{1}",x.GetType().Name, res.StatusCode)
+                    None
+            return {
+                Record      = record
+                Success     = res.IsSuccessStatusCode
+                HTTPStatus  = res.StatusCode.ToString()
+                UpdateDate  = update
+            }
         }
+        |> Async.RunSynchronously
 
-    member internal x.Put(url : string, json : string) = 
-        let task = fun _ -> 
-            let content= new StringContent(json, utf8, "application/json")
-            let task = client.PutAsync(url, content)
-            let resp = task.Result
-        
-            sprintf "Server resp: %s, code:%s" (resp.Content.ReadAsStringAsync().Result) (resp.StatusCode.ToString())
-            |> NLog.LogManager.GetCurrentClassLogger().Info
-            resp.IsSuccessStatusCode
-        DAOQueue.Instance.AddTask(task)
+    member internal x.DoPut(url : string, obj) = 
+        let task = 
+            async {
+                let content= new StringContent(utils.JSON.PickleToString(obj), utils.UTF8, "application/json")
+                let! response =  utils.HTTP.PutAsync(utils.Host + url, content) |> Async.AwaitTask
+                let! str = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+                let code = response.StatusCode.ToString()
+                sprintf "Server resp: %s, code:%s" str code
+                |> logger.Info
+            }
+        task |> Async.Start
         

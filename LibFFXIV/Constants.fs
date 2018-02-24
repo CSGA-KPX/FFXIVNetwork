@@ -33,3 +33,7 @@ type MarketArea =
 let FFXIVBasePacketMagic    = "5252A041FF5D46E27F2A644D7B99C475"
 let FFXIVBasePacketMagicAlt = "00000000000000000000000000000000"
 let TargetClientVersion     = "2018.02.01.0000.0000"
+
+type PacketDirection = 
+    | In   = 0
+    | Out  = 1

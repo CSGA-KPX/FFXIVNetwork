@@ -242,3 +242,45 @@ type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TOutData
 
     ///dict数量超过多少以后开始清理僵尸
     static member private zombieCheckLimit = 10
+
+
+type XIVArray<'T> (cap : int) = 
+    let arr = Array.init<'T option> cap (fun _ -> None)
+    let mutable networkCompleted = false
+
+    new () = new XIVArray<'T>(100)
+
+    member x.AddSlice(curr, next, data : 'T []) = 
+        data 
+        |> Array.iteri (fun idx data ->
+            let i = idx + curr
+            arr.[idx + curr] <- Some(data))
+        if next = 0 then
+            networkCompleted <- true
+
+    member x.IsCompleted = 
+        if networkCompleted then
+            let firstNone = arr |> Array.tryFindIndex (fun x -> x.IsNone)
+            let  lastSome = arr |> Array.findIndexBack (fun x -> x.IsSome)
+            if firstNone.IsSome then
+                (firstNone.Value - lastSome) = 1
+            else
+                lastSome = (cap - 1)
+        else
+            false
+
+    member x.First = 
+        let i = arr |> Array.tryFind (fun x -> x.IsSome)
+        if i.IsSome then
+            Some(i.Value.Value)
+        else
+            None
+
+    member x.Data = 
+        arr
+        |> Array.filter  (fun x -> x.IsSome)
+        |> Array.map (fun x -> x.Value)
+
+    member x.Reset() = 
+        networkCompleted <- false
+        Array.fill arr 0 cap None

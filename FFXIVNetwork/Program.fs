@@ -29,12 +29,12 @@ let main argv =
 
         let sent = 
             fun (id : string) (epoch : int64) (data : byte[]) ->
-                handler.HandlePacketMachina(epoch, data, LibFFXIV.Network.TcpPacket.PacketDirection.Out)
+                handler.HandlePacketMachina(epoch, data, LibFFXIV.Network.Constants.PacketDirection.Out)
         monitor.MessageSent <- new Machina.FFXIV.FFXIVNetworkMonitor.MessageSentDelegate(sent)
 
         let received = 
             fun (id : string) (epoch : int64) (data : byte[]) ->
-                handler.HandlePacketMachina(epoch, data, LibFFXIV.Network.TcpPacket.PacketDirection.In)
+                handler.HandlePacketMachina(epoch, data, LibFFXIV.Network.Constants.PacketDirection.In)
         monitor.MessageReceived <- new Machina.FFXIV.FFXIVNetworkMonitor.MessageReceivedDelegate(received)
 
 

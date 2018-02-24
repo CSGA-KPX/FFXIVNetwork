@@ -88,7 +88,6 @@
     <Compile Include="SpecializedPacket\CharacterNameLookupReply.fs" />
     <Compile Include="SpecializedPacket\WorldList.fs" />
     <Compile Include="SpecializedPacket\Chat.fs" />
-    <Compile Include="TcpPacket.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

@@ -1,73 +1,26 @@
 ﻿module LibXIVServer.TradeLogV2
 open System
-open System.Net.Http
-open MBrace.FsPickler
-open System.Net.Http.Headers
 open LibFFXIV.Network
 open LibXIVServer.Common
 
-//marketlogs/
-//         /itemId     PUT  读取7天内数据，或提交交易记录
-//         /itemId/d   GET      获取d天内交易记录，默认7，最大28
+type TradeLogDAO () = 
+    inherit DAOBase<SpecializedPacket.TradeLogRecord []>()
 
-let APIUrl itemId = sprintf "%s/tradelogs/%i" APIHost itemId
-let APIUrlRange itemId days = sprintf "%s/tradelogs/%i/%i" APIHost itemId days
+    override x.GetUrl([<ParamArray>] args:Object []) =
+        String.Format("/tradelogs/{0}/{1}", args)
 
-
-type TradeLogResult = 
-    {
-        TradeLogs : SpecializedPacket.TradeLogRecord [] option
-        Days      : int
-        ItemId      : int
-        Success     : bool
-        HTTPStatus  : string
-        UpdateDate  : string
-    }
+    override x.PutUrl([<ParamArray>] args:Object []) = 
+        String.Format("/tradelogs/{0}", args)
 
 
-let GetTradeLogRange(itemId, days) =
-    let res = Common.HTTPClient.GetAsync(APIUrlRange itemId days).Result
-    let resp   = res.Content.ReadAsStringAsync().Result
-    let update = 
-        let v = res.Content.Headers.LastModified
-        if v.HasValue then
-            let t = v.Value.ToLocalTime()
-            let now = DateTimeOffset.Now
-            let diff = now - t
-            sprintf "%3i天%2i时%2i分前" (diff.Days) (diff.Hours) (diff.Minutes)
-        else
-            "N/A"
+    member x.GetRange(itemId, days) =
+        let url = x.GetUrl(itemId, days)
+        x.DoGet(url)
 
-    let records = 
-        if res.IsSuccessStatusCode then
-            Some(Common.ToJson.UnPickleOfString<SpecializedPacket.TradeLogRecord []>(resp))
-        else
-            NLog.LogManager.GetCurrentClassLogger().Info("获取交易记录失败 状态码：{0}", res.StatusCode)
-            None
+    member x.Get(itemId : uint32) = 
+        x.GetRange(itemId, 7)
 
-    {
-        TradeLogs = records 
-        Days      = days
-        ItemId      = itemId
-        Success     = res.IsSuccessStatusCode
-        HTTPStatus  = res.StatusCode.ToString()
-        UpdateDate  = update
-    }
-
-let GetTradeLog(itemId) =
-    GetTradeLogRange(itemId, 7)
-
-
-let PutTradeLog(logs : SpecializedPacket.TradeLogRecord []) =
-    let itemId = logs.[0].ItemID
-    let containOthers = logs |> Array.exists (fun r -> r.ItemID <> itemId)
-    if containOthers then
-        NLog.LogManager.GetCurrentClassLogger().Info("提交交易记录失败，ItemID不唯一: {0}", logs)
-    else
-        let json = ToJson.PickleToString(logs)
-        let content= new StringContent(json, UTF8, "application/json")
-        let task = HTTPClient.PutAsync(APIUrl itemId, content)
-        let resp = task.Result
-        //resp.EnsureSuccessStatusCode() |> ignore
-        sprintf "Server resp: %s, code:%s" (resp.Content.ReadAsStringAsync().Result) (resp.StatusCode.ToString())
-        |> NLog.LogManager.GetCurrentClassLogger().Info
+    member x.Put(itemId : uint32, logs : SpecializedPacket.TradeLogRecord []) = 
+        let url = x.PutUrl(itemId)
+        x.DoPut(url, logs)
+        
