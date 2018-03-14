@@ -24,8 +24,8 @@ type MarketRecord =
         Unknown4    : byte    // 1 byte
     }
 
-    static member ParseFromBytes(bytes : byte[]) = 
-        use r  = XIVBinaryReader.FromBytes(bytes)
+    static member ParseFromBytes(data : byte []) = 
+        use r  = XIVBinaryReader.FromBytes(data)
         {
             OrderID      = r.ReadUInt32()
             Unknown1     = r.ReadUInt32()
@@ -50,33 +50,15 @@ type MarketPacket =
         Records : MarketRecord []
         NextIdx : byte
         CurrIdx : byte
-        Unknown : bytes // 6bytes
+        Unknown : byte [] // 6bytes
     }
-
-    interface IQueueableItem<byte, MarketPacket> with
-        member x.QueueCurrentIdx = x.CurrIdx
-        member x.QueueNextIdx    = x.NextIdx
-
-        member x.IsCompleted () = 
-            x.CurrIdx = x.NextIdx
-
-        member x.IsExpried   (ref) = 
-            false
-    
-        member x.Combine     (y)   = 
-            {
-                Records = Array.append x.Records y.Records
-                NextIdx = y.NextIdx
-                CurrIdx = x.CurrIdx
-                Unknown = x.Unknown
-            }
 
     static member private logger = NLog.LogManager.GetCurrentClassLogger()
 
     static member private recordSize = 112
 
-    static member ParseFromBytes(bytes : byte[]) = 
-        use r = XIVBinaryReader.FromBytes(bytes)
+    static member ParseFromBytes(data : ByteArray) = 
+        use r = data.GetReader()
         let (chks, rst) = r.ReadRestBytesAsChunk(MarketPacket.recordSize, true)
 
         if rst.IsNone then
@@ -96,25 +78,3 @@ type MarketPacket =
             CurrIdx = rst.Value.[1]
             Unknown = rst.Value.[2..]
         }
-
-
-
-type MarketQueue () = 
-    inherit GeneralPacketReassemblyQueue<byte, MarketPacket, MarketRecord []>()
-
-    override x.preProcessPacketChain(p : MarketPacket) = 
-        let qItem = p :> IQueueableItem<byte, MarketPacket>
-        let isFirstPacket = qItem.QueueCurrentIdx = 0uy && qItem.QueueNextIdx = 10uy
-        let isDictNotEmpty= x.dict.Count <> 0
-        if isFirstPacket && isDictNotEmpty then
-            x.logger.Error("Got start packet while dict is not empty. dict.Clear()")
-            x.dict.Clear()
-
-    override x.processPacketCompleteness(p) = 
-        let qItem = p :> IQueueableItem<byte, MarketPacket>
-        if qItem.IsCompleted() then
-            let rs = p.Records |> Array.sortBy (fun x -> x.Price)
-            x.OnCompleted(rs)
-        else
-            //printfn "NewPkt, Added curr:%i, next:%i" (qItem.QueueCurrentIdx) (qItem.QueueNextIdx)
-            x.dict.Add(qItem.QueueCurrentIdx, p)

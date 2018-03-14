@@ -8,6 +8,10 @@ type HexString = LibFFXIV.Network.Utils.HexString
 
 let mutable UploadClientData = true
 
+let mutable LogRawPacketData = true
+let mutable LogGamePacket    = true
+
+
 module UAC = 
     open System
     open System.Diagnostics

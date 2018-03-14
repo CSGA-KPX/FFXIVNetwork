@@ -8,8 +8,8 @@ type CharacterNameLookupReply =
         Username : string
     }
 
-    static member ParseFromBytes(bytes : byte []) = 
-        use r = XIVBinaryReader.FromBytes(bytes)
+    static member ParseFromBytes(data : ByteArray) = 
+        use r = data.GetReader()
         {
             UserID   = r.ReadUInt64()
             Username = r.ReadFixedUTF8(32)

@@ -9,8 +9,10 @@ open System
 [<CLIMutableAttribute>]
 type DBTradeLog = 
     {
+        [<Indexed(Name = "ItemID")>]
         ItemID      : uint32
         Price       : uint32
+        [<Indexed(Name = "TimeStamp", Order=2)>]
         TimeStamp   : uint32
         Count       : uint32
         IsHQ        : bool
@@ -55,8 +57,8 @@ type TradeLogs() as x =
     inherit Nancy.NancyModule()
     do
         db.CreateTable<DBTradeLogUpdate>() |> ignore
-        db.Execute("""CREATE TABLE IF NOT EXISTS "DBTradeLog" ( "ItemID" integer , "Price" integer , "TimeStamp" integer , "Count" integer , "IsHQ" integer , "Unknown" integer , "BuyerName" varchar(20), UNIQUE ("ItemID" , "TimeStamp" ) ON CONFLICT IGNORE)""")
-        |> ignore
+        db.CreateTable<DBTradeLog>() |> ignore
+        
         x.Put("/tradelogs/{itemId:int}", fun parms -> 
             let p = parms :?> Nancy.DynamicDictionary
             let itemId = p.["ItemId"] |> System.Convert.ToUInt32
@@ -77,7 +79,7 @@ type TradeLogs() as x =
         if isNull logs then
             sprintf "Updated %i failed: Data error" item
         else
-            db.InsertAll(logs) |> ignore
+            db.InsertAll(logs, "OR IGNORE", true) |> ignore
             db.InsertOrReplace(DBTradeLogUpdate.GetUtcNow(item)) |> ignore
             sprintf "Updated tradelog %i complete" item
 

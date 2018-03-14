@@ -5,6 +5,7 @@ open System.Reflection
 open System.Collections.Generic
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.Constants
+open LibFFXIV.Network.Utils
 
 type StringBuilder = B of (Text.StringBuilder -> unit)
 
@@ -43,7 +44,7 @@ type PacketHandleMethodAttribute(opcode : Opcodes, direction : PacketDirection) 
 
 [<AbstractClassAttribute>]
 type PacketHandlerBase() as x = 
-    let logger = NLog.LogManager.GetLogger(x.GetType().FullName)
+    let logger = NLog.LogManager.GetLogger(x.GetType().Name)
 
     member internal x.Logger = logger
 
@@ -80,7 +81,7 @@ type PacketHandler() as x =
     member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction, epoch) = 
         let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
         let ts     = gp.TimeStamp
-        let data   = Utils.HexString.ToHex (gp.Data)
+        let data   = gp.Data.ToString()
         let dir    = 
             match direction with
             | PacketDirection.In  -> "<<<<<"
@@ -90,6 +91,7 @@ type PacketHandler() as x =
 
     member x.HandlePacketMachina (epoch : int64, data : byte [], direction : PacketDirection) = 
         try
+            let data = new ByteArray(data)
             let sp = FFXIVSubPacket.Parse(data).[0] //TODO
             let spType = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
             match spType with
@@ -101,7 +103,8 @@ type PacketHandler() as x =
             | PacketTypes.ServerHandShake
                 -> ()
             | PacketTypes.GameMessage ->
-                rawLogger.Trace(Utils.HexString.ToHex(sp.Data))
+                if Utils.LogRawPacketData then
+                    rawLogger.Trace(sp.Data.ToString())
                 let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
                 x.LogGamePacketOne(gp, direction, epoch)
                 try

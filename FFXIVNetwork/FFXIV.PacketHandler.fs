@@ -1,7 +1,6 @@
-﻿module FFXIV.PacketHandler
+﻿namespace FFXIV.PacketHandler
 open System
 open FFXIV.PacketHandlerBase
-
 open LibFFXIV.Network.Constants
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
@@ -35,7 +34,8 @@ type CharacterNameLookupReplyHandler() =
         let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
         x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
         
-        if Utils.UploadClientData then
+        //修正：19014409512717509， 这个用户名有问题
+        if Utils.UploadClientData && String.IsNullOrEmpty(r.Username) then
             dao.Put(r)
 
 type TradeLogPacketHandler() = 
@@ -118,6 +118,7 @@ type MaketPacketHandler ()=
             x.LogMarketRecords(data)
             if Utils.UploadClientData then
                 x.UploadMarketData(data)
+            arr.Reset()
 
 
 type MarketListHandler() = 

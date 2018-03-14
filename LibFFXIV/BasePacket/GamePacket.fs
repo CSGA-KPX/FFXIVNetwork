@@ -8,19 +8,19 @@ type FFXIVGamePacket =
         Unknown1  : uint32
         TimeStamp : TimeStamp
         Unknown2  : uint32
-        Data      : bytes
+        Data      : ByteArray
     }
 
 
-    static member ParseFromBytes(bytes : byte[]) = 
-        use r = XIVBinaryReader.FromBytes(bytes)
+    static member ParseFromBytes(data : ByteArray) = 
+        use r = data.GetReader()
         {
             Magic    = r.ReadUInt16()
             Opcode   = r.ReadUInt16()
             Unknown1 = r.ReadUInt32()
             TimeStamp= r.ReadTimeStampSec()
             Unknown2 = r.ReadUInt32()
-            Data     = r.ReadRestBytes()
+            Data     = new ByteArray(r.ReadRestBytes())
         }
 
     static member private logger = NLog.LogManager.GetCurrentClassLogger()

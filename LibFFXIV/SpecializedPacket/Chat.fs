@@ -115,8 +115,8 @@ type Chat =
         Text    : string //2048 bytes fixed
     }
 
-    static member ParseFromBytes(bytes : byte []) = 
-        use r = XIVBinaryReader.FromBytes(bytes)
+    static member ParseFromBytes(data : ByteArray) = 
+        use r = data.GetReader()
         {
             UserID  = r.ReadUInt64()
             Unknown = r.ReadUInt32()

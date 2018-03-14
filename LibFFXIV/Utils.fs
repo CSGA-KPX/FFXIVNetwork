@@ -3,8 +3,6 @@ open System
 open System.IO
 open System.Text
 
-type bytes = byte []
-
 type HexString = 
     //This is rarely used. No need for faster method
     static member ToBytes (s : string) = 
@@ -143,106 +141,49 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         let ms = new IO.MemoryStream(bytes)
         new XIVBinaryReader(ms)
 
-/// 提供碎片拼接相关数据
-type IQueueableItem<'TSeq, 'TData> = 
-    abstract QueueCurrentIdx : 'TSeq
-    abstract QueueNextIdx    : 'TSeq
 
-    abstract IsCompleted : unit  -> bool
-    abstract IsExpried   : 'TSeq -> bool
+type ByteArray(buf : byte[]) = 
+    let buf = buf
+    let hex = lazy (HexString.ToHex(buf))
+
+    new (hex : string) = 
+        new ByteArray(HexString.ToBytes(hex))
+
+    override x.ToString() = hex.Force()
+
+    member x.GetBuffer()  = buf
+
+    member x.GetReader()  = 
+        XIVBinaryReader.FromBytes(buf)
     
-    /// 将两个'TData合并，并修改索引值
-    abstract Combine     : 'TData -> 'TData
+    member x.HexContains(ba : byte[]) = 
+        let h = HexString.ToHex(ba)
+        hex.Force().Contains(h)
 
+    member x.HexContains(i : int) = 
+        x.HexContains(BitConverter.GetBytes(i))
 
-[<AbstractClassAttribute>]
-type GeneralPacketReassemblyQueue<'TSeq, 'TItem, 'TOutData 
-                                    when 'TSeq : equality
-                                    and 'TItem :>IQueueableItem<'TSeq, 'TItem>>() as x = 
-    let rwlock = new Threading.ReaderWriterLockSlim()
-    let evt = new Event<'TOutData>()
-    let d   = System.Collections.Generic.Dictionary<'TSeq, 'TItem>()
-    let nlog= NLog.LogManager.GetLogger(x.GetType().FullName)
+    member x.HexContains(i : int64) = 
+        x.HexContains(BitConverter.GetBytes(i))
+        
+    member x.HexContains(i : uint32) = 
+        x.HexContains(BitConverter.GetBytes(i))
 
+    member x.HexContains(i : uint64) = 
+        x.HexContains(BitConverter.GetBytes(i))
 
-    member internal x.logger = nlog
+    member x.HexContains(s : string) = 
+        x.HexContains(Encoding.UTF8.GetBytes(s))
 
-    member internal x.dict = d
+    member x.HexContains(i : float) = 
+        x.HexContains(BitConverter.GetBytes(i))
 
-    member internal x.OnCompleted(d : 'TOutData) =
-        evt.Trigger(d)
+    member x.GetSlice(f, t) = 
+        let f = defaultArg f 0
+        let t = defaultArg t (buf.Length - 1)
+        buf.[f .. t]
 
-    member x.NewCompleteDataEvent = evt.Publish
-
-    member x.GetQueuedKeys() = x.dict.Keys
-
-    abstract processPacketCompleteness : 'TItem -> unit
-
-    abstract preProcessPacketChain     : 'TItem -> unit
-
-    default x.preProcessPacketChain(data : 'TItem) = ()
-
-
-    member internal x.CombineItems([<ParamArray>] objs : 'TItem []) =
-        objs
-        |> Array.reduce (fun acc item -> acc.Combine(item))
-
-    member private x.processPacketChain(p : 'TItem) =
-        let (fwdSucc, fwdItem) = x.dict.TryGetValue(p.QueueCurrentIdx)
-        let RevSearch = 
-            x.dict
-            |> Seq.filter (fun x -> 
-                x.Value.QueueCurrentIdx = p.QueueNextIdx)
-            |> Seq.tryHead
-
-        match fwdSucc, RevSearch.IsSome with
-        | true, true   ->
-            let p3 = RevSearch.Value.Value
-            let np = x.CombineItems(fwdItem, p, p3)
-            x.dict.Remove(p.QueueCurrentIdx) |> ignore
-            x.dict.Remove(RevSearch.Value.Key) |> ignore
-            x.processPacketChain(np)
-        | true, false  -> 
-            let np = x.CombineItems(fwdItem, p)
-            x.dict.Remove(p.QueueCurrentIdx) |> ignore
-            x.processPacketChain(np)
-        | false, true  -> 
-            let np =  x.CombineItems(p, RevSearch.Value.Value)
-            x.dict.Remove(RevSearch.Value.Key) |> ignore
-            x.processPacketChain(np)
-        | false, false -> 
-            x.processPacketCompleteness(p)
-
-    member x.Enqueue(p : 'TItem) =
-        rwlock.EnterWriteLock()
-        try
-            x.preProcessPacketChain(p)
-            let isCompleted = (p :> IQueueableItem<'TSeq, 'TItem>).IsCompleted()
-            if isCompleted then
-                x.processPacketCompleteness(p)
-            else
-                x.processPacketChain(p)
-            if x.dict.Count >= GeneralPacketReassemblyQueue<_,_,_>.zombieCheckLimit then
-                let toRemove = 
-                    x.dict.Values
-                    |> Seq.map (fun x -> x)
-                    |> Seq.filter (fun x -> x.IsExpried(p.QueueCurrentIdx))
-                    |> Seq.map (fun x -> x.QueueNextIdx)
-                    |> Seq.toList
-                toRemove
-                |> List.iter (fun key -> 
-                        x.logger.Info("Removed zombie packets key={0}", key)
-                        x.dict.Remove(key)|> ignore)
-        with
-        | e -> 
-            x.logger.Error("捕获到异常{0}，清空所有数据", e.ToString())
-            x.dict.Clear()
-        rwlock.ExitWriteLock()
-
-
-    ///dict数量超过多少以后开始清理僵尸
-    static member private zombieCheckLimit = 10
-
+    member x.Item(idx) = buf.[idx]
 
 type XIVArray<'T> (cap : int) = 
     let arr = Array.init<'T option> cap (fun _ -> None)

@@ -79,14 +79,10 @@
     <Compile Include="Constants.fs" />
     <Compile Include="BasePacket\GamePacket.fs" />
     <Compile Include="BasePacket\SubPacket.fs" />
-    <Compile Include="BasePacket\BasePacket.fs" />
     <Compile Include="SpecializedPacket\MarketOrders.fs" />
     <Compile Include="SpecializedPacket\MarketSearchResult.fs" />
     <Compile Include="SpecializedPacket\TradeLog.fs" />
-    <Compile Include="SpecializedPacket\CharaSelectReply.fs" />
-    <Compile Include="SpecializedPacket\CharacterList.fs" />
     <Compile Include="SpecializedPacket\CharacterNameLookupReply.fs" />
-    <Compile Include="SpecializedPacket\WorldList.fs" />
     <Compile Include="SpecializedPacket\Chat.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />

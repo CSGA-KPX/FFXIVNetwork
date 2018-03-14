@@ -45,9 +45,8 @@ type TradeLogPacket =
         ItemID : uint32
         Records: TradeLogRecord []
     }
-    static member ParseFromBytes(bytes : byte[]) = 
-        use ms = new MemoryStream(bytes)
-        use r  = new BinaryReader(ms)
+    static member ParseFromBytes(data : ByteArray) = 
+        use r = data.GetReader()
         let itemId = r.ReadUInt32()
         let restBytes = 
             let bs = r.BaseStream

@@ -1,13 +1,14 @@
 ﻿open System
-open System.Threading
 open Nancy.Hosting.Self
 open Mono.Unix
 open Mono.Unix.Native
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
 open Nancy
-open Nancy.Configuration
+open Nancy.Extensions
+open Nancy.Diagnostics
 open Nancy.Json
+open Nancy.Bootstrapper
 
 type CustomJsonSerializer() = 
     inherit JsonSerializer()
@@ -22,12 +23,20 @@ type Bootstrapper()  =
 
     override x.Configure(e) = 
         e.Json(retainCasing = new System.Nullable<bool>(true))
+        e.Diagnostics(true, "A98532E21655")
         base.Configure(e)
+
+    override x.Modules
+        with get() = 
+            x.TypeCatalog
+             .GetTypesAssignableTo<INancyModule>(TypeResolveStrategies.All)
+             .NotOfType<DiagnosticModule>()
+            |> Seq.map (fun t -> new ModuleRegistration(t))
 
 [<EntryPoint>]
 let main argv = 
     let uri  = "http://127.0.0.1:5000"
-    let host = new NancyHost(new Uri(uri))
+    let host = new NancyHost(new Bootstrapper(), new Uri(uri))
     Console.WriteLine("Starting Nancy on " + uri);
     host.Start()
 

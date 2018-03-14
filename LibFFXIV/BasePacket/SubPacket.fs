@@ -8,7 +8,7 @@ type FFXIVSubPacket =
         TargetId : uint32
         Type     : uint16
         Unknown  : uint16
-        Data     : bytes
+        Data     : ByteArray
     }
     static member private logger = NLog.LogManager.GetCurrentClassLogger()
     
@@ -21,9 +21,9 @@ type FFXIVSubPacket =
         else
             failwithf "This subpacket is not game packet"
 
-    static member Parse (bytes : byte []) = 
+    static member Parse (data : ByteArray) = 
         [|
-            use r = XIVBinaryReader.FromBytes(bytes)
+            use r = data.GetReader()
             while not (r.IsEnd()) do
                 let size = r.ReadUInt32()
                 let toRead = (int size) - 0x10
@@ -32,7 +32,7 @@ type FFXIVSubPacket =
                         TargetId = r.ReadUInt32()
                         Type     = r.ReadUInt16()
                         Unknown  = r.ReadUInt16()
-                        Data     = r.ReadBytes(toRead) }
+                        Data     = new ByteArray(r.ReadBytes(toRead)) }
 
             if not (r.IsEnd()) then
                 printfn "Subpacket Not END!!!!"

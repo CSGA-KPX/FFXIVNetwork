@@ -17,25 +17,8 @@ type MarketListPacket =
         CurrIdx : uint16
     }
 
-    interface IQueueableItem<uint16, MarketListPacket> with
-        member x.QueueCurrentIdx = x.CurrIdx
-        member x.QueueNextIdx    = x.NextIdx
-
-        member x.IsCompleted () = 
-            (x.NextIdx |> int) % 10  = 0
-
-        member x.IsExpried   (ref) = 
-            false
-    
-        member x.Combine     (y)   = 
-            {
-                Records = Array.append x.Records y.Records
-                NextIdx = y.NextIdx
-                CurrIdx = x.CurrIdx
-            }
-
-    static member FromBytes (bs : bytes) = 
-        let ars = bs |> Array.chunkBySize 8
+    static member FromBytes (data : ByteArray) = 
+        let ars = data.GetBuffer() |> Array.chunkBySize 8
         let data= 
             let d = 
                 ars.[0 .. 19]
