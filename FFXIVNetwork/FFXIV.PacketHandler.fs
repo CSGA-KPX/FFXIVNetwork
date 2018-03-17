@@ -35,7 +35,7 @@ type CharacterNameLookupReplyHandler() =
         x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
         
         //修正：19014409512717509， 这个用户名有问题
-        if Utils.UploadClientData && String.IsNullOrEmpty(r.Username) then
+        if Utils.UploadClientData && (not <| String.IsNullOrEmpty(r.Username)) then
             dao.Put(r)
 
 type TradeLogPacketHandler() = 
@@ -55,7 +55,7 @@ type TradeLogPacketHandler() =
                         i.Value.ToString()
                     else
                         sprintf "未知物品 XIVId(%i)" log.ItemID
-                let date  = LibFFXIV.Network.Utils.TimeStamp.FromSeconds(log.TimeStamp)
+                let date  = DateTimeOffset.FromUnixTimeSeconds(log.TimeStamp |> int64).ToLocalTime()
                 yield sprintf "%O %s P:%i C:%i HQ:%b Buyer:%s" date iName log.Price log.Count log.IsHQ log.BuyerName
                     
             yield "====TradeLogDataEnd===="
@@ -80,7 +80,7 @@ type MaketPacketHandler ()=
             yield "====MarketData===="
             for data in mr do
                 let i = SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
-                let date  = LibFFXIV.Network.Utils.TimeStamp.FromSeconds(data.TimeStamp)
+                let date  = DateTimeOffset.FromUnixTimeSeconds(data.TimeStamp |> int64).ToLocalTime()
                 let price = data.Price
                 let count = data.Count
                 let isHQ  = data.IsHQ

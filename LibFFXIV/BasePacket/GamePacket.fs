@@ -1,12 +1,13 @@
 namespace LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.Utils
+open System
 
 type FFXIVGamePacket = 
     {
         Magic     : uint16
         Opcode    : uint16
         Unknown1  : uint32
-        TimeStamp : TimeStamp
+        TimeStamp : DateTimeOffset
         Unknown2  : uint32
         Data      : ByteArray
     }

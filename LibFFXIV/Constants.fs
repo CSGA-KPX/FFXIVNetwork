@@ -1,6 +1,7 @@
 ﻿module LibFFXIV.Network.Constants
 
 type Opcodes = 
+    | None        = 0xFFFFus
     | TradeLogInfo = 0x00E1us 
     | TradeLogData = 0x00E6us 
     | Market       = 0x00E2us 

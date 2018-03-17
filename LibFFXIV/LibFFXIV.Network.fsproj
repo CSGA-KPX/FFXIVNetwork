@@ -9,10 +9,11 @@
     <OutputType>Library</OutputType>
     <RootNamespace>LibFFXIV</RootNamespace>
     <AssemblyName>LibFFXIV</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>LibFFXIV.Network</Name>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -84,6 +85,7 @@
     <Compile Include="SpecializedPacket\TradeLog.fs" />
     <Compile Include="SpecializedPacket\CharacterNameLookupReply.fs" />
     <Compile Include="SpecializedPacket\Chat.fs" />
+    <Compile Include="NewPacketModel.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

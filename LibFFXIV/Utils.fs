@@ -1,6 +1,6 @@
 ﻿module LibFFXIV.Network.Utils
 open System
-open System.IO
+open System.Reflection
 open System.Text
 
 type HexString = 
@@ -41,27 +41,6 @@ type HexString =
 let internal IsByteArrayNotAllZero (bytes : byte[]) =
     bytes
     |> Array.exists (fun x -> x <> 0uy)
-
-/// <summary>
-/// Unix时间戳
-/// </summary>
-type TimeStamp(utc : DateTime) = 
-    let utc = utc
-    member x.GetUTCTime()  = utc
-    member x.GetLocalTime() = utc.ToLocalTime()
-
-
-    override x.ToString() = x.GetLocalTime().ToString()
-
-    static member UTC = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-
-    static member Now = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds |> int32;
-
-    static member FromSeconds(sec : uint32) = 
-        new TimeStamp(TimeStamp.UTC.AddSeconds(sec |> float))
-
-    static member FromMilliseconds(ms : uint64) = 
-        new TimeStamp(TimeStamp.UTC.AddMilliseconds(ms |> float))
 
 type XIVBinaryReader(ms : IO.MemoryStream) = 
     inherit IO.BinaryReader(ms)
@@ -109,13 +88,13 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
     /// 读取秒(uint32)单位的时间戳
     /// </summary>
     member x.ReadTimeStampSec() = 
-        TimeStamp.FromSeconds(x.ReadUInt32())
+        DateTimeOffset.FromUnixTimeSeconds(x.ReadUInt32() |> int64)
 
     /// <summary>
     /// 读取毫秒(uint64)单位的时间戳
     /// </summary>
     member x.ReadTimeStampMillisec() = 
-        TimeStamp.FromMilliseconds(x.ReadUInt64())
+        DateTimeOffset.FromUnixTimeMilliseconds(x.ReadUInt64() |> int64)
 
     /// <summary>
     /// 将剩余字节分块返回
