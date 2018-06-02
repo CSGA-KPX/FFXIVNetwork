@@ -23,7 +23,7 @@ let main argv =
 
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
-        let monitor = new Machina.FFXIV.FFXIVNetworkMonitor()
+        let monitor = new Utils.FFXIVNetworkMonitorChs()
 
         monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.WinPCap
 

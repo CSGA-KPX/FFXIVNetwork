@@ -2,16 +2,12 @@
 
 type Opcodes = 
     | None        = 0xFFFFus
-    | TradeLogInfo = 0x00E1us 
-    | TradeLogData = 0x00E6us 
-    | Market       = 0x00E2us 
-    | MarketList   = 0x00E9us
-    | CharacterNameLookupReply = 0x013Eus
-    | Chat         = 0x00B9us
-    | Pong         = 0x0143us //Not updated
-    | WorldList    = 0x0015us //Not updated
-    | CharaList    = 0x000Dus //Not updated
-    | SelectCharaReply = 0x000Fus //Not updated
+    | TradeLogInfo = 0x00E1us // Not used
+    | TradeLogData = 0x0110us // 4.2
+    | Market       = 0x010Cus // 4.2
+    | MarketList   = 0x0113us // 4.2
+    | CharacterNameLookupReply = 0x0173us // 4.2
+    | Chat         = 0x00E1us // 4.2
 
 type PacketTypes = 
     | None             = 0x0000us
@@ -33,7 +29,7 @@ type MarketArea =
 
 let FFXIVBasePacketMagic    = "5252A041FF5D46E27F2A644D7B99C475"
 let FFXIVBasePacketMagicAlt = "00000000000000000000000000000000"
-let TargetClientVersion     = "2018.02.28.0000.0000"
+let TargetClientVersion     = "2018.05.17.0000.0000"
 
 type PacketDirection = 
     | In   = 0

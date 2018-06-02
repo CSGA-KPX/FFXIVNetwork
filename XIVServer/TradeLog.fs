@@ -84,8 +84,8 @@ type TradeLogs() as x =
             sprintf "Updated tradelog %i complete" item
 
     member private x.GetTradeLogs (item, days) = 
-        let timespan = (new System.TimeSpan(days |> int , 0, 0, 0)).TotalSeconds |> int
-        let targetTimestamp = Utils.TimeStamp.Now - timespan
+        let timespan = new System.TimeSpan(days |> int , 0, 0, 0)
+        let targetTimestamp = DateTimeOffset.UtcNow.Subtract(timespan).ToUnixTimeSeconds()
         let res = db.Query<DBTradeLog>("select * from DBTradeLog where ItemID = ? and TimeStamp >= ?", item, targetTimestamp)
         let test = res |> Seq.map (DBTradeLog.ToNetwork) |> Seq.toArray
         

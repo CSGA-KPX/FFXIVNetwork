@@ -19,27 +19,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotSquish", "K:\Apps\SaintC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YamlDotNet", "K:\Apps\SaintCoinach\YamlDotNet\YamlDotNet.csproj", "{BF32DE1B-6276-4341-B212-F8862ADBBA7A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Machina", "Machina", "{1085EB92-9421-4EB4-8DE0-431FA766CCC2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Machina", "Machina\Machina\Machina.csproj", "{2681C607-A075-4070-BE13-34F0A395119E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{57A2D197-02BA-4730-89EF-B462D8F70744}"
-	ProjectSection(SolutionItems) = preProject
-		Machina\CHANGELOG.md = Machina\CHANGELOG.md
-		Machina\LICENSE.md = Machina\LICENSE.md
-		Machina\README.md = Machina\README.md
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Machina.FFXIV", "Machina\Machina.FFXIV\Machina.FFXIV.csproj", "{4303E4F0-4C90-44EB-90C2-691451FE49E7}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "XIVServer", "XIVServer\XIVServer.fsproj", "{E3D103EF-0442-4D89-A4A2-842FE784CBAF}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.Client", "LibFFXIV.Client\LibFFXIV.Client.fsproj", "{6DA83005-E663-4B66-9AA7-2A2AADB17BB3}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
@@ -133,30 +117,6 @@ Global
 		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Unsigned|Any CPU.Build.0 = Release-Unsigned|Any CPU
 		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Unsigned|x86.ActiveCfg = Release-Unsigned|Any CPU
 		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Unsigned|x86.Build.0 = Release-Unsigned|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Debug|x86.Build.0 = Debug|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release|x86.ActiveCfg = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release|x86.Build.0 = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release-Unsigned|x86.ActiveCfg = Release|Any CPU
-		{2681C607-A075-4070-BE13-34F0A395119E}.Release-Unsigned|x86.Build.0 = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Debug|x86.Build.0 = Debug|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release|x86.ActiveCfg = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release|x86.Build.0 = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|x86.ActiveCfg = Release|Any CPU
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7}.Release-Unsigned|x86.Build.0 = Release|Any CPU
 		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3D103EF-0442-4D89-A4A2-842FE784CBAF}.Debug|x86.ActiveCfg = Debug|Any CPU
@@ -189,12 +149,12 @@ Global
 		{8A7D65EB-3DE3-4631-B286-CC73A3126002} = {B98F7E8C-CC37-48EF-A17D-7D7B7995E7D6}
 		{F9681545-4BEA-4FD3-9AB9-A67BD37AB36D} = {B98F7E8C-CC37-48EF-A17D-7D7B7995E7D6}
 		{BF32DE1B-6276-4341-B212-F8862ADBBA7A} = {B98F7E8C-CC37-48EF-A17D-7D7B7995E7D6}
-		{2681C607-A075-4070-BE13-34F0A395119E} = {1085EB92-9421-4EB4-8DE0-431FA766CCC2}
-		{57A2D197-02BA-4730-89EF-B462D8F70744} = {1085EB92-9421-4EB4-8DE0-431FA766CCC2}
-		{4303E4F0-4C90-44EB-90C2-691451FE49E7} = {1085EB92-9421-4EB4-8DE0-431FA766CCC2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7EB23E61-03C0-414B-BEDD-1B6187E31A5D}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

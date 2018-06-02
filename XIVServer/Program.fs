@@ -21,6 +21,10 @@ type Bootstrapper()  =
     do
         ()
 
+    override x.ConfigureConventions(nancyConventions) = 
+        nancyConventions.ViewLocationConventions.Clear()
+        nancyConventions.ViewLocationConventions.Add(fun v m ctx -> String.Concat("views/", v))
+
     override x.Configure(e) = 
         e.Json(retainCasing = new System.Nullable<bool>(true))
         e.Diagnostics(true, "A98532E21655")
