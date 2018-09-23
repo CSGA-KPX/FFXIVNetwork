@@ -7,8 +7,7 @@ open LibFFXIV.Network.SpecializedPacket
 open LibFFXIV.Client.Item
 open System.Collections.Generic
 
-
-type ChatHandler() = 
+type UserIDHandler() = 
     inherit PacketHandlerBase()
 
     let cache = new HashSet<uint64>()
@@ -24,17 +23,25 @@ type ChatHandler() =
             dao.Put({UserID = r.UserID; Username = r.Username})
             cache.Add(r.UserID) |> ignore
 
-type CharacterNameLookupReplyHandler() = 
-    inherit PacketHandlerBase()
+    [<PacketHandleMethodAttribute(Opcodes.LinkshellList, PacketDirection.In)>]
+    member x.HandleLinkshellList(gp) = 
+        let p = LinkshellListPacket.ParseFromBytes(gp.Data)
+        let hex = Utils.HexString.ToHex(p.Header)
+        x.Logger.Info("LinkshellListHandler Header:{0}--", hex)
+        for r in p.Records do 
+            x.Logger.Info("{0}({1})@{2}", r.UserName, r.UserID, r.ServerID)
+            if (not <| cache.Contains(r.UserID)) && Utils.UploadClientData then
+                dao.Put({UserID = r.UserID; Username = r.UserName})
+                cache.Add(r.UserID) |> ignore
 
-    let dao   = new LibXIVServer.UsernameMapping.UsernameMappingDAO()
+        x.Logger.Info("--LinkshellListHandler Header:{0}--", hex)
 
     [<PacketHandleMethodAttribute(Opcodes.CharacterNameLookupReply, PacketDirection.In)>]
-    member x.HandleReply(gp) = 
+    member x.HandleCharacterNameLookupReply(gp) = 
         let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
         x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
         
-        //修正：19014409512717509， 这个用户名有问题
+        //修正：有些奇怪的用户名第一个字节为0x00
         if Utils.UploadClientData && (not <| String.IsNullOrEmpty(r.Username)) then
             dao.Put(r)
 
@@ -124,20 +131,38 @@ type MaketPacketHandler ()=
 type MarketListHandler() = 
     inherit PacketHandlerBase()
 
+    let arr = LibFFXIV.Network.Utils.XIVArray<MarketListRecord>()
+    let mutable reqNum = 0uy
+
+    [<PacketHandleMethod(Opcodes.MarketListRequest, PacketDirection.Out)>]
+    member x.HandleRequest(gp) = 
+        let data = gp.Data
+        let req  = data.[4]
+        if reqNum <> req then
+            x.Logger.Info(sprintf "MarketListRequestChanged : %i -> %i" reqNum req)
+            arr.Reset()
+            reqNum <- req
+
+
     [<PacketHandleMethod(Opcodes.MarketList, PacketDirection.In)>]
     member x.Handle (gp) = 
-        sb {
-            yield "====MarketList===="
-            let mlp= MarketListPacket.FromBytes(gp.Data)
-            for d in mlp.Records do 
-                let item = SaintCoinachItemProvider.GetInstance().FromId(d.ItemId |>int)
-                let iName = 
-                    if item.IsSome then
-                        item.Value.ToString()
-                    else
-                        sprintf "未知物品 XIVId(%i)" d.ItemId
-                yield sprintf "物品:%s 订单数:%i 需求 %i"  iName d.Count  d.Demand
-            yield "====MarketListEnd===="
-        }
-        |> buildString
-        |> x.Logger.Info
+        let frag = MarketListPacket.FromBytes(gp.Data)
+        arr.AddSlice(frag.CurrIdx |> int, frag.NextIdx |> int, frag.Records)
+
+        if arr.IsCompleted then
+            let data = arr.Data
+            arr.Reset()
+            sb {
+                yield "====MarketList===="
+                for d in data do 
+                    let item = SaintCoinachItemProvider.GetInstance().FromId(d.ItemId |>int)
+                    let iName = 
+                        if item.IsSome then
+                            item.Value.ToString()
+                        else
+                            sprintf "未知物品 XIVId(%i)" d.ItemId
+                    yield sprintf "物品:%s 订单数:%i 需求 %i"  iName d.Count  d.Demand
+                yield "====MarketListEnd===="
+            }
+            |> buildString
+            |> x.Logger.Info

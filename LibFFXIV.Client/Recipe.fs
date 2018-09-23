@@ -34,23 +34,26 @@ type internal SaintCoinachRecipeProvider() =
     let dict     = new Dictionary<int, RecipeRecord>()
 
     do
-        let recipes = Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.Recipe>()
-        for recipe in recipes do 
-            //部分道具具有多个配方，但材料差不多
-            if not (dict.ContainsKey(recipe.ResultItem.Key)) then
-                let ingredients = 
-                    recipe.Ingredients
-                    |> Seq.map (fun x ->
-                        let item = SaintCoinachItemProvider.GetInstance().FromId(x.Item.Key).Value
-                        let count= x.Count |> float
-                        (item, count))
-                    |> Seq.toArray
-                let r = 
-                    {
-                        RecipeRecord.Materials = ingredients
-                        RecipeRecord.ProductCount = recipe.ResultCount |> float
-                    }
-                dict.Add(recipe.ResultItem.Key, r)
+        try
+            let recipes = Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.Recipe>()
+            for recipe in recipes do 
+                //部分道具具有多个配方，但材料差不多
+                if not (dict.ContainsKey(recipe.ResultItem.Key)) then
+                    let ingredients = 
+                        recipe.Ingredients
+                        |> Seq.map (fun x ->
+                            let item = SaintCoinachItemProvider.GetInstance().FromId(x.Item.Key).Value
+                            let count= x.Count |> float
+                            (item, count))
+                        |> Seq.toArray
+                    let r = 
+                        {
+                            RecipeRecord.Materials = ingredients
+                            RecipeRecord.ProductCount = recipe.ResultCount |> float
+                        }
+                    dict.Add(recipe.ResultItem.Key, r)
+        with 
+        | e -> Diagnostics.Trace.TraceError(e.ToString())
     
     interface IRecipeProvider with
         member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> Utils.TryGetToOption

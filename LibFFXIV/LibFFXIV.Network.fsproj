@@ -85,6 +85,7 @@
     <Compile Include="SpecializedPacket\TradeLog.fs" />
     <Compile Include="SpecializedPacket\CharacterNameLookupReply.fs" />
     <Compile Include="SpecializedPacket\Chat.fs" />
+    <Compile Include="SpecializedPacket\LinkshellList.fs" />
     <Compile Include="NewPacketModel.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />

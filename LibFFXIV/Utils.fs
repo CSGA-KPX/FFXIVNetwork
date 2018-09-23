@@ -165,7 +165,7 @@ type ByteArray(buf : byte[]) =
     member x.Item(idx) = buf.[idx]
 
 type XIVArray<'T> (cap : int) = 
-    let arr = Array.init<'T option> cap (fun _ -> None)
+    let arr = Array.zeroCreate<'T option> cap
     let mutable networkCompleted = false
 
     new () = new XIVArray<'T>(100)
@@ -179,15 +179,22 @@ type XIVArray<'T> (cap : int) =
             networkCompleted <- true
 
     member x.IsCompleted = 
+        let firstNone = arr |> Array.tryFindIndex (fun x -> x.IsNone)
+        let  lastSome = arr |> Array.findIndexBack (fun x -> x.IsSome)
+
+        let isFull = firstNone.IsNone
+
         if networkCompleted then
-            let firstNone = arr |> Array.tryFindIndex (fun x -> x.IsNone)
-            let  lastSome = arr |> Array.findIndexBack (fun x -> x.IsSome)
+            //Network packet end, check for gaps
+            // SSSSSNNNN OK
+            // SNSNSNNNN NG
             if firstNone.IsSome then
-                (firstNone.Value - lastSome) = 1
+                let hasGap = (firstNone.Value - lastSome) <> 1
+                not hasGap
             else
-                lastSome = (cap - 1)
+                isFull
         else
-            false
+            isFull
 
     member x.First = 
         let i = arr |> Array.tryFind (fun x -> x.IsSome)
