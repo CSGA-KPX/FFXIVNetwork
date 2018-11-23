@@ -79,15 +79,15 @@ type PacketHandler() as x =
                         
 
     member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction, epoch) = 
-        let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode))
-        let ts     = gp.TimeStamp
+        let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode) |> Array.rev )
+        let ts     = gp.TimeStamp.ToLocalTime()
         let data   = gp.Data.ToString()
         let dir    = 
             match direction with
             | PacketDirection.In  -> "<<<<<"
             | PacketDirection.Out -> ">>>>>"
             | _ -> invalidArg "direction" "unknown"
-        plogger.Trace("GamePacket:{6} {7} OP:{0} TS:{1} {2}/{3} Data:{4}", opcode, ts, 0, 0, data, gp.Magic, dir, epoch)
+        plogger.Trace("TS:{2} {0} OP:{1} Data:{3}",dir, opcode, ts, data)
 
     member x.HandlePacketMachina (epoch : int64, data : byte [], direction : PacketDirection) = 
         try

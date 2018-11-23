@@ -15,7 +15,6 @@ open LibXIVServer.Global
 [<CLIMutableAttribute>]
 type DBMarketRecord = 
     {
-        [<PrimaryKeyAttribute>]
         OrderID     : uint32
         Unknown1    : uint32
         RetainerID  : int64
@@ -26,7 +25,7 @@ type DBMarketRecord =
         Unknown2    : uint32
         Count       : uint32
         [<Indexed(Name = "ItemID")>]
-        Itemid      : uint32
+        ItemID      : uint32
         ///最后访问雇员的日期
         TimeStamp   : uint32
         Unknown3    : byte [] //24 byte unknown
@@ -47,7 +46,7 @@ type DBMarketRecord =
             DBMarketRecord.Price = r.Price
             DBMarketRecord.Unknown2 = r.Unknown2
             DBMarketRecord.Count = r.Count
-            DBMarketRecord.Itemid = r.Itemid
+            DBMarketRecord.ItemID = r.Itemid
             DBMarketRecord.TimeStamp = r.TimeStamp
             DBMarketRecord.Unknown3 = r.Unknown3
             DBMarketRecord.Name = r.Name
@@ -67,7 +66,7 @@ type DBMarketRecord =
             SpecializedPacket.MarketRecord.Price = r.Price
             SpecializedPacket.MarketRecord.Unknown2 = r.Unknown2
             SpecializedPacket.MarketRecord.Count = r.Count
-            SpecializedPacket.MarketRecord.Itemid = r.Itemid
+            SpecializedPacket.MarketRecord.Itemid = r.ItemID
             SpecializedPacket.MarketRecord.TimeStamp = r.TimeStamp
             SpecializedPacket.MarketRecord.Unknown3 = r.Unknown3
             SpecializedPacket.MarketRecord.Name = r.Name
@@ -87,12 +86,38 @@ type DBOrdersSnapshot =
         LastUpdate : System.DateTime
     }
 
+[<CLIMutableAttribute>]
+type DBMarketRecordOrderIDUpdate =
+    {
+        [<PrimaryKeyAttribute>]
+        OrderID     : uint32
+        Price       : uint32
+        ///UTC time
+        LastAccessTime : System.DateTime
+    }
+    static member FromOrder (o : SpecializedPacket.MarketRecord) = 
+        {
+            OrderID = o.OrderID
+            Price   = o.Price
+            LastAccessTime = DateTime.UtcNow
+        }
+
+[<CLIMutableAttribute>]
+type ExistsResult =
+    {
+        Result : uint32
+    }
+
+
 type MarketOrders() as x = 
     inherit Nancy.NancyModule()
     do
         db.CreateTable<DBOrdersSnapshot>() |> ignore
         db.CreateTable<DBMarketRecord>() |> ignore
+        db.CreateTable<DBMarketRecordOrderIDUpdate>() |> ignore
+        db.Query<DBMarketRecordOrderIDUpdate>("CREATE INDEX IF NOT EXISTS `DBMarketRecordOrderIDUpdate_Index` ON `DBMarketRecordOrderIDUpdate` (`OrderID`,`Price`)") |> ignore
         
+
         x.Put("/orders/raw/{itemId:int}", fun parms -> 
             let p = parms :?> Nancy.DynamicDictionary
             let itemId = p.["ItemId"] |> System.Convert.ToUInt32
@@ -123,8 +148,23 @@ type MarketOrders() as x =
             else
                 let obj = {OrdersJSON = str; ItemID = itemId; LastUpdate = DateTime.UtcNow;}
                 db.InsertOrReplace(obj) |> ignore
-                db.InsertAll(logs |> Array.map (DBMarketRecord.ToDB), "OR IGNORE", true) |> ignore
-                sprintf "Updated market orders %i complete" itemId
+                try
+                    let count = ref 0
+                    db.RunInTransaction(fun () ->
+                        //Add Orders
+                        for o in logs do 
+                            //Check for existence
+                            let result = db.Query<ExistsResult>("SELECT EXISTS(SELECT 1 FROM DBMarketRecordOrderIDUpdate WHERE OrderID = ? AND Price = ?) AS Result", o.OrderID, o.Price).[0].Result
+                            if result = 0u then
+                                 //If not exist, then insert
+                                db.Insert(o |> DBMarketRecord.ToDB) |> ignore
+                                incr count
+                        //Update all caches
+                        db.InsertAll(logs |> Array.map (DBMarketRecordOrderIDUpdate.FromOrder), "OR REPLACE", true) |> ignore
+                    )
+                    sprintf "Updated market orders %i complete, %i row(s) updated" itemId (!count)
+                with
+                | e -> sprintf "Updated market orders %i failed, exp is %A" itemId e
        
     member private x.GetOrders(itemId) =
         let res = db.Query<DBOrdersSnapshot>("select * from DBOrdersSnapshot where ItemID = ?", itemId)

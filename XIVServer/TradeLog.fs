@@ -58,7 +58,8 @@ type TradeLogs() as x =
     do
         db.CreateTable<DBTradeLogUpdate>() |> ignore
         db.CreateTable<DBTradeLog>() |> ignore
-        
+        db.Query<DBTradeLog>("CREATE UNIQUE INDEX IF NOT EXISTS DBTradeLog_UniqueIndex ON DBTradeLog(TimeStamp, BuyerName, Price, Count, IsHQ)") |> ignore
+
         x.Put("/tradelogs/{itemId:int}", fun parms -> 
             let p = parms :?> Nancy.DynamicDictionary
             let itemId = p.["ItemId"] |> System.Convert.ToUInt32
@@ -79,9 +80,9 @@ type TradeLogs() as x =
         if isNull logs then
             sprintf "Updated %i failed: Data error" item
         else
-            db.InsertAll(logs, "OR IGNORE", true) |> ignore
+            let updated = db.InsertAll(logs, "OR IGNORE", true)
             db.InsertOrReplace(DBTradeLogUpdate.GetUtcNow(item)) |> ignore
-            sprintf "Updated tradelog %i complete" item
+            sprintf "Updated tradelog %i, %i row(s) updated" item updated
 
     member private x.GetTradeLogs (item, days) = 
         let timespan = new System.TimeSpan(days |> int , 0, 0, 0)
