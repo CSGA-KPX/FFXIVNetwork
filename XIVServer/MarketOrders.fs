@@ -148,6 +148,7 @@ type MarketOrders() as x =
             else
                 let obj = {OrdersJSON = str; ItemID = itemId; LastUpdate = DateTime.UtcNow;}
                 db.InsertOrReplace(obj) |> ignore
+                let total = logs.Length
                 try
                     let count = ref 0
                     db.RunInTransaction(fun () ->
@@ -162,7 +163,7 @@ type MarketOrders() as x =
                         //Update all caches
                         db.InsertAll(logs |> Array.map (DBMarketRecordOrderIDUpdate.FromOrder), "OR REPLACE", true) |> ignore
                     )
-                    sprintf "Updated market orders %i complete, %i row(s) updated" itemId (!count)
+                    sprintf "Updated market orders %i complete, %i/%i row(s) updated" itemId (!count) total
                 with
                 | e -> sprintf "Updated market orders %i failed, exp is %A" itemId e
        

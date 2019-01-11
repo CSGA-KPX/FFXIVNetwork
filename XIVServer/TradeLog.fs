@@ -80,9 +80,10 @@ type TradeLogs() as x =
         if isNull logs then
             sprintf "Updated %i failed: Data error" item
         else
+            let total   = logs.Length
             let updated = db.InsertAll(logs, "OR IGNORE", true)
             db.InsertOrReplace(DBTradeLogUpdate.GetUtcNow(item)) |> ignore
-            sprintf "Updated tradelog %i, %i row(s) updated" item updated
+            sprintf "\r\nUpdated tradelog %i,\r\n%i/%i row(s) updated" item updated total
 
     member private x.GetTradeLogs (item, days) = 
         let timespan = new System.TimeSpan(days |> int , 0, 0, 0)

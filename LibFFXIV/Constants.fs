@@ -28,7 +28,7 @@ type MarketArea =
   | Ishgard      = 0x0004
   | Kugane       = 0x0007
 
-let TargetClientVersion     = "2018.10.19.0000.0000"
+let TargetClientVersion     = "2018.11.26.0000.0000"
 
 type PacketDirection = 
     | In   = 0
