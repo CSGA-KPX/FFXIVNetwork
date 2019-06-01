@@ -49,7 +49,8 @@ type Result<'T> =
 
 
 type DAOUtils private () = 
-    let client = new HttpClient()
+    let handler = new HttpClientHandler(Proxy = new System.Net.WebProxy("http://127.0.0.1:7777"), UseProxy = false)
+    let client = new HttpClient(handler)
     let utf8   = new Text.UTF8Encoding(false)
     let json   = FsPickler.CreateJsonSerializer(false, true)
     let host   = "https://xivnet.danmaku.org"

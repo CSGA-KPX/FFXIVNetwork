@@ -16,7 +16,8 @@ type DBTradeLog =
         TimeStamp   : uint32
         Count       : uint32
         IsHQ        : bool
-        Unknown     : byte
+        //uint16 casted to uint32
+        Unknown     : uint32
         [<MaxLengthAttribute(20)>]
         BuyerName  : string
     }

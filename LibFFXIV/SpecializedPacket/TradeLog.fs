@@ -13,12 +13,12 @@ type TradeLogRecord =
         TimeStamp   : uint32
         Count       : uint32
         IsHQ        : bool
-        Unknown     : byte
+        Unknown     : uint32
         BuyerName  : string
     }
     static member ParseFromBytes(bytes : byte[]) = 
         [|
-            let recordSize = 52
+            let recordSize = 104/2
             let chunks = 
                 bytes 
                 |> Array.chunkBySize recordSize
@@ -33,7 +33,7 @@ type TradeLogRecord =
                     TimeStamp   = r.ReadUInt32()
                     Count       = r.ReadUInt32()
                     IsHQ        = r.ReadByte() = 1uy
-                    Unknown     = r.ReadByte()
+                    Unknown     = r.ReadInt16() |> uint32
                     BuyerName  = 
                                     let bytes = r.ReadBytes(34)
                                     Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])

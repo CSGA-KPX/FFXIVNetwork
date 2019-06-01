@@ -1,5 +1,4 @@
 namespace LibFFXIV.Network.SpecializedPacket
-open System.IO
 open LibFFXIV.Network.Utils
 
 [<CLIMutableAttribute>]
@@ -24,6 +23,8 @@ type MarketRecord =
         Unknown4    : byte    // 1 byte
     }
 
+    static member private zerosA = ""
+
     static member ParseFromBytes(data : byte []) = 
         use r  = XIVBinaryReader.FromBytes(data)
         {
@@ -39,10 +40,19 @@ type MarketRecord =
             TimeStamp = r.ReadUInt32()
             Unknown3  = r.ReadBytes(24)
             Name      = r.ReadFixedUTF8(32)
-            IsHQ      = r.ReadByte() = 1uy
+            IsHQ      = 
+                let unknown5 = r.ReadBytes(32)
+                if (unknown5 |> Array.sum) <> 0uy then 
+                    System.Console.WriteLine("MarketRecord Unknown5 = {0}", HexString.ToHex(unknown5))
+                r.ReadByte() = 1uy
             MeldCount = r.ReadByte()
-            Market    = r.ReadByte()
             Unknown4  = r.ReadByte()
+            Market    = 
+                let market = r.ReadByte()
+                let unknown6 = r.ReadRestBytes()
+                if (unknown6 |> Array.sum) <> 0uy then 
+                    System.Console.WriteLine("MarketRecord Unknown6 = {0}", HexString.ToHex(unknown6))
+                market
         }
 
 type MarketPacket =
@@ -55,7 +65,7 @@ type MarketPacket =
 
     static member private logger = NLog.LogManager.GetCurrentClassLogger()
 
-    static member private recordSize = 112
+    static member private recordSize = 304/2 //112 detla = 40
 
     static member ParseFromBytes(data : ByteArray) = 
         use r = data.GetReader()

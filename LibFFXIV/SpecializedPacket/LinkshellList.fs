@@ -20,7 +20,7 @@ type LinkshellListPacket =
         use r = data.GetReader()
 
         let header = r.ReadBytes(8)
-        let chunks, tail = r.ReadRestBytesAsChunk(64, false)
+        let chunks, tail = r.ReadRestBytesAsChunk(72, false)
 
         let r = 
             [|
@@ -29,10 +29,10 @@ type LinkshellListPacket =
                         use r = XIVBinaryReader.FromBytes(chunk)
                         let userid = r.ReadUInt64()
                         let serverid = 
-                            r.ReadBytes(21) |> ignore
+                            r.ReadBytes(16) |> ignore
                             r.ReadUInt16()
                         let username =
-                            r.ReadByte() |> ignore
+                            r.ReadBytes(7) |> ignore
                             r.ReadFixedUTF8(32)
                         if userid <> 0UL then
                             yield {UserID = userid; ServerID = serverid; UserName = username}

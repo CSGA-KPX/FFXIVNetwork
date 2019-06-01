@@ -2,14 +2,12 @@
 
 type Opcodes = 
     | None        = 0xFFFFus
-    | TradeLogInfo = 0x0121us // 4.3
-    | TradeLogData = 0x0127us // 4.3
-    | Market       = 0x0123us // 4.3
-    | MarketList   = 0x012Aus // 4.3
-    | MarketListRequest = 0x0103us // 4.3
-    | CharacterNameLookupReply = 0x0189us // 4.3
-    | Chat         = 0x00F7us // 4.3
-    | LinkshellList = 0x00FEus // 4.3
+    | TradeLogInfo = 0x0125us // 4.5
+    | TradeLogData = 0x012Aus // 4.5
+    | Market       = 0x0126us // 4.5
+    | CharacterNameLookupReply = 0x018Eus // 4.5
+    | Chat         = 0x00F7us // 4.5
+    | LinkshellList = 0x0104us //4.5
 
 type PacketTypes = 
     | None             = 0x0000us
@@ -28,7 +26,7 @@ type MarketArea =
   | Ishgard      = 0x0004
   | Kugane       = 0x0007
 
-let TargetClientVersion     = "2018.11.26.0000.0000"
+let TargetClientVersion     = "2019.04.02.0000.0000"
 
 type PacketDirection = 
     | In   = 0

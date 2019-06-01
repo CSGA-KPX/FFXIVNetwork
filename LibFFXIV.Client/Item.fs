@@ -30,6 +30,10 @@ type SaintCoinachItemProvider private() =
             {Id = 18491; Name = "游牧御敌头盔";}    , {Id = 18491; Name = "游牧御敌头盔时装";}
             {Id = 17915; Name = "迦迦纳怪鸟的粗皮";}, {Id = 17915; Name = "大迦迦纳怪鸟的粗皮";}
             {Id = 20561; Name = "东方装甲";}        , {Id = 20561; Name = "东国装甲";}
+            {Id = 24187; Name = "2018年度群狼盛宴区域锦标赛冠军之证";}        , {Id = 24187; Name = "2018年度群狼盛宴区域锦标赛冠军之证24187";}
+            {Id = 24188; Name = "2018年度群狼盛宴区域锦标赛冠军之证";}        , {Id = 24188; Name = "2018年度群狼盛宴区域锦标赛冠军之证24188";}
+            {Id = 24189; Name = "2018年度群狼盛宴区域锦标赛冠军之证";}        , {Id = 24189; Name = "2018年度群狼盛宴区域锦标赛冠军之证24189";}
+
         |] |> dict
     do
         for item in Utils.SaintCoinachInstance.Instance.GameData.Items do 

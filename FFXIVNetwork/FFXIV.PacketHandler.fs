@@ -127,7 +127,7 @@ type MaketPacketHandler ()=
                 x.UploadMarketData(data)
             arr.Reset()
 
-
+(*
 type MarketListHandler() = 
     inherit PacketHandlerBase()
 
@@ -166,3 +166,4 @@ type MarketListHandler() =
             }
             |> buildString
             |> x.Logger.Info
+*)
