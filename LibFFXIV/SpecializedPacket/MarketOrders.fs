@@ -26,6 +26,7 @@ type MarketRecord =
     static member private zerosA = ""
 
     static member ParseFromBytes(data : byte []) = 
+        Logger.Log<MarketRecord>(data |> HexString.ToHex)
         use r  = XIVBinaryReader.FromBytes(data)
         {
             OrderID      = r.ReadUInt32()

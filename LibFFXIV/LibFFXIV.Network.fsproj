@@ -81,7 +81,6 @@
     <Compile Include="BasePacket\GamePacket.fs" />
     <Compile Include="BasePacket\SubPacket.fs" />
     <Compile Include="SpecializedPacket\MarketOrders.fs" />
-    <Compile Include="SpecializedPacket\MarketSearchResult.fs" />
     <Compile Include="SpecializedPacket\TradeLog.fs" />
     <Compile Include="SpecializedPacket\CharacterNameLookupReply.fs" />
     <Compile Include="SpecializedPacket\Chat.fs" />
@@ -91,15 +90,13 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core">
-      <Name>FSharp.Core</Name>
-      <AssemblyName>FSharp.Core.dll</AssemblyName>
-      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\FSharp\.NETFramework\v4.0\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-    </Reference>
     <Reference Include="NLog">
-      <HintPath>..\packages\NLog.4.5.6\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\packages\NLog.4.6.6\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

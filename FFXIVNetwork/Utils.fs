@@ -6,12 +6,12 @@ let logger = NLog.LogManager.GetCurrentClassLogger()
 
 type HexString = LibFFXIV.Network.Utils.HexString
 
-let mutable UploadClientData = true
+let mutable UploadClientData = false
 
 let mutable LogRawPacketData = true
 let mutable LogGamePacket    = true
 
-
+let WindowName = "最终幻想XIV"
 
 type FFXIVNetworkMonitorChs() = 
     inherit Machina.FFXIV.FFXIVNetworkMonitor() 
@@ -27,7 +27,7 @@ type FFXIVNetworkMonitorChs() =
         mon <- Some( new Machina.TCPNetworkMonitor() )
         mon.Value.ProcessID <- x.ProcessID
         if mon.Value.ProcessID = 0u then
-            mon.Value.WindowName <- "最终幻想XIV"
+            mon.Value.WindowName <- WindowName
         mon.Value.MonitorType <- x.MonitorType
         mon.Value.LocalIP <- x.LocalIP
         mon.Value.UseSocketFilter <- x.UseSocketFilter
@@ -48,7 +48,6 @@ type FFXIVNetworkMonitorChs() =
 
         sent.SetValue(x, box(null))
         recv.SetValue(x, box(null))
-
 
 module UAC = 
     open System
@@ -71,3 +70,22 @@ module UAC =
         with
         | _ -> RestartWithUAC()
         Environment.Exit(0)
+
+
+module ProcessCheck = 
+    open System.Text
+    open System.Diagnostics
+    open System.Runtime.InteropServices
+
+    //src : https://stackoverflow.com/posts/48319879/revisions
+    [<DllImportAttribute("Kernel32.dll")>]
+    extern bool internal QueryFullProcessImageName([<In>] IntPtr hProcess, [<In>] uint32 dwFlags, [<Out>] StringBuilder lpExeName, [<In>][<Out>] uint32& lpdwSize)
+
+    let GetMainModuleFileName(p : Process) = 
+        let buffer = 4096
+        let sb = new StringBuilder(buffer)
+        let mutable bufferLen = sb.Capacity + 1 |> uint32
+        if QueryFullProcessImageName(p.Handle, 0u, sb, &bufferLen) then
+            Some(sb.ToString())
+        else
+            None

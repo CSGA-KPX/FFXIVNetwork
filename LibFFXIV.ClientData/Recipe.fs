@@ -1,19 +1,16 @@
-﻿module LibFFXIV.Client.Recipe
+﻿module LibFFXIV.ClientData.Recipe
 open System
 open System.Collections.Generic
-open LibFFXIV.Client.Item
+open LibFFXIV.ClientData.Item
 
 type RecipeRecord = 
     {
-        ///制作材料 (lodestoneId, 数量)
+        ResultItem    : ItemRecord
         Materials     : (ItemRecord * float) []
         ProductCount  : float
     }
 
-type IRecipeProvider = 
-    abstract TryGetRecipe : ItemRecord -> RecipeRecord option
-
-type internal FinalMaterials () = 
+type FinalMaterials () = 
     let m = new Dictionary<ItemRecord, float>()
 
     member x.AddOrUpdate(item, runs) = 
@@ -28,68 +25,56 @@ type internal FinalMaterials () =
                 yield (kv.Key, kv.Value)
         |]
 
-type internal SaintCoinachRecipeProvider() = 
-    let version  = Utils.SaintCoinachInstance.Instance.GameVersion
-    let logger   = NLog.LogManager.GetCurrentClassLogger()
-    let dict     = new Dictionary<int, RecipeRecord>()
+type IRecipeProvider = 
+    abstract TryGetRecipe : ItemRecord -> RecipeRecord option
+
+
+[<AbstractClassAttribute>]
+type RecipeProviderBase() as x = 
+    let logger = NLog.LogManager.GetLogger(x.GetType().Name)
+
+    member internal x.Logger = logger
+
+
+type CraftRecipeProvider() as x = 
+    inherit RecipeProviderBase()
+    let dict     = new Dictionary<ItemRecord, RecipeRecord>()
 
     do
         try
-            let recipes = Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.Recipe>()
+            let recipes = Utils.Recipe.ReadBinary<RecipeRecord[]>()
             for recipe in recipes do 
-                //部分道具具有多个配方，但材料差不多
-                if not (dict.ContainsKey(recipe.ResultItem.Key)) then
-                    let ingredients = 
-                        recipe.Ingredients
-                        |> Seq.map (fun x ->
-                            let item = SaintCoinachItemProvider.GetInstance().FromId(x.Item.Key).Value
-                            let count= x.Count |> float
-                            (item, count))
-                        |> Seq.toArray
-                    let r = 
-                        {
-                            RecipeRecord.Materials = ingredients
-                            RecipeRecord.ProductCount = recipe.ResultCount |> float
-                        }
-                    dict.Add(recipe.ResultItem.Key, r)
-        with 
-        | e -> Diagnostics.Trace.TraceError(e.ToString())
-    
-    interface IRecipeProvider with
-        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> Utils.TryGetToOption
+                //部分道具具有多个配方，但材料差不多，略过
+                if not <| dict.ContainsKey(recipe.ResultItem) then
+                    dict.Add(recipe.ResultItem, recipe)
+        with
+        | e -> x.Logger.Fatal("CraftRecipeProvider加载失败，异常：%s", e.ToString())
 
-type internal SaintCoinachCompanyRecipeProvider() = 
-    let version  = Utils.SaintCoinachInstance.Instance.GameVersion
-    let logger   = NLog.LogManager.GetCurrentClassLogger()
-    let dict     = new Dictionary<int, RecipeRecord>()
+    interface IRecipeProvider with
+        member x.TryGetRecipe(item) = dict.TryGetValue(item)  |> Utils.TryGetToOption
+
+type CompanyCraftRecipeProvider() as x = 
+    inherit RecipeProviderBase()
+    let dict     = new Dictionary<ItemRecord, RecipeRecord>()
+
     do
-        let recipes = 
-            Utils.SaintCoinachInstance.Instance.GameData.GetSheet<SaintCoinach.Xiv.CompanyCraftSequence>()
-            |> Seq.toArray
-            |> (fun x -> x.[1..])
-        for recipe in recipes do 
-            let ip   = SaintCoinachItemProvider.GetInstance()
-            let item = recipe.ResultItem.ToString()
-            let ikey = recipe.ResultItem.Key
-            let m    = new FinalMaterials()
-
-            for part in recipe.CompanyCraftParts do 
-                for proc in part.CompanyCraftProcesses do 
-                    for request in proc.Requests do 
-                        let rin= request.SupplyItem.ToString()
-                        let ri = rin |> ip.FromName
-                        let rc = request.TotalQuantity
-                        if ri.IsNone then
-                            logger.Fatal(sprintf "找不到工坊物品%s的材料%s" item rin)
-                        else
-                            m.AddOrUpdate(ri.Value, rc|> float)
-            dict.Add(ikey, {Materials = m.Get(); ProductCount = 1.0})
+        try
+            let recipes = Utils.CompanyCraftSequence.ReadBinary<RecipeRecord[]>()
+            for recipe in recipes do 
+                //部分道具具有多个配方，但材料差不多，略过
+                if not <| dict.ContainsKey(recipe.ResultItem) then
+                    dict.Add(recipe.ResultItem, recipe)
+        with
+        | e -> x.Logger.Fatal("CraftRecipeProvider加载失败，异常：%s", e.ToString())
 
     interface IRecipeProvider with
-        member x.TryGetRecipe(i) = dict.TryGetValue(i.Id)  |> Utils.TryGetToOption
+        member x.TryGetRecipe(item) = dict.TryGetValue(item)  |> Utils.TryGetToOption
+
 
 type RecipeManager private () = 
-    let providers = System.Collections.Generic.HashSet<IRecipeProvider>()
+    inherit RecipeProviderBase()
+
+    let providers = HashSet<IRecipeProvider>()
     let rec findRecipe (list : IRecipeProvider list, item : ItemRecord) = 
         match list with 
         | [] -> None
@@ -100,18 +85,18 @@ type RecipeManager private () =
             else
                 findRecipe(tail, item)
 
+
     static let instance = 
         let rm = new RecipeManager()
-        rm.AddProvider(new SaintCoinachRecipeProvider())
-        rm.AddProvider(new SaintCoinachCompanyRecipeProvider())
+        rm.AddProvider(new CraftRecipeProvider())
+        rm.AddProvider(new CompanyCraftRecipeProvider())
         rm
 
-    member x.TryGetRecipe(item : ItemRecord) = 
-        findRecipe(providers |> Seq.toList, item)
+    static member GetInstance() = instance
 
     ///获取物品直接材料
     member x.GetMaterials(item : ItemRecord) =
-        let recipe = x.TryGetRecipe(item)
+        let recipe = (x :> IRecipeProvider).TryGetRecipe(item)
         [|
             if recipe.IsSome then
                 yield! recipe.Value.Materials
@@ -120,7 +105,7 @@ type RecipeManager private () =
     ///获取物品基本材料
     member x.GetMaterialsRec(item : ItemRecord) =
         let rec getMaterialsRec(acc : Dictionary<ItemRecord, (ItemRecord * float)>, item : ItemRecord, runs : float) = 
-            let recipe = x.TryGetRecipe(item)
+            let recipe = (x :> IRecipeProvider).TryGetRecipe(item)
             if recipe.IsNone then
                 if acc.ContainsKey(item) then
                     let (item, count) = acc.[item]
@@ -142,7 +127,7 @@ type RecipeManager private () =
     ///获取物品以及子物品的直接材料
     member x.GetMaterialsRecGroup(item : ItemRecord) = 
         let rec getMaterialsRec(acc : Queue<string * (ItemRecord * float) []>, level : string, item : ItemRecord, runs : float) = 
-            let recipe = x.TryGetRecipe(item)
+            let recipe = (x :> IRecipeProvider).TryGetRecipe(item)
             if recipe.IsNone then
                 ()
             else
@@ -164,4 +149,6 @@ type RecipeManager private () =
     member x.AddProvider(p : IRecipeProvider) = 
         providers.Add(p) |> ignore
 
-    static member GetInstance() = instance
+    interface IRecipeProvider with
+        member x.TryGetRecipe(item : ItemRecord) = 
+            findRecipe(providers |> Seq.toList, item)

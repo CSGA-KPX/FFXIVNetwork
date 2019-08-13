@@ -47,11 +47,12 @@
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
     <OutputPath>bin\$(Configuration)\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\$(Configuration)\$(AssemblyName).XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x86</PlatformTarget>
+    <OtherFlags>/win32manifest:FFXIVNetwork.exe.manifest</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -88,12 +89,13 @@
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="FFXIVNetwork.exe.manifest" />
     <None Include="NLog.xsd" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LibFFXIV.Client\LibFFXIV.Client.fsproj">
-      <Name>LibFFXIV.Client</Name>
-      <Project>{6da83005-e663-4b66-9aa7-2a2aadb17bb3}</Project>
+    <ProjectReference Include="..\LibFFXIV.ClientData\LibFFXIV.ClientData.fsproj">
+      <Name>LibFFXIV.ClientData</Name>
+      <Project>{2c3e47ee-b8e5-4e05-8999-84c0c4859bcb}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\LibFFXIV\LibFFXIV.Network.fsproj">
@@ -106,21 +108,19 @@
       <Project>{8a3c2b67-647d-431a-9ac1-7695667b0de7}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Machina">
-      <HintPath>..\packages\Machina.FFXIV.2.1.0\lib\net40\Machina.dll</HintPath>
+      <HintPath>..\packages\Machina.FFXIV.2.1.1\lib\net40\Machina.dll</HintPath>
     </Reference>
     <Reference Include="Machina.FFXIV">
-      <HintPath>..\packages\Machina.FFXIV.2.1.0\lib\net40\Machina.FFXIV.dll</HintPath>
+      <HintPath>..\packages\Machina.FFXIV.2.1.1\lib\net40\Machina.FFXIV.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core">
-      <Name>FSharp.Core</Name>
-      <AssemblyName>FSharp.Core.dll</AssemblyName>
-      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\FSharp\.NETFramework\v4.0\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
-    </Reference>
     <Reference Include="NLog">
-      <HintPath>..\packages\NLog.4.5.6\lib\net45\NLog.dll</HintPath>
+      <HintPath>..\packages\NLog.4.6.6\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

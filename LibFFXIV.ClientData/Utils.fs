@@ -1,4 +1,51 @@
-﻿module LibFFXIV.Client.Utils
+﻿module LibFFXIV.ClientData.Utils
+open System.IO
+open System.Reflection
+open MBrace.FsPickler
+
+let TryGetToOption (x : bool, y: 'Value) = 
+    if x then
+        Some(y)
+    else
+        None
+
+let internal bs = FsPickler.CreateBinarySerializer()
+type Resource = 
+    | Item
+    | Recipe
+    | CompanyCraftSequence
+    | GilShopItem
+    | TargetVersion
+        
+    member x.ReadText() = 
+        let assembly = Assembly.GetExecutingAssembly()
+        use stream = assembly.GetManifestResourceStream(x.ToString())
+        use reader = new StreamReader(stream, System.Text.Encoding.Unicode)
+        reader.ReadToEnd()
+
+    member x.ReadBinary<'T>() = 
+        let assembly = Assembly.GetExecutingAssembly()
+        use stream = assembly.GetManifestResourceStream(x.ToString())
+        bs.Deserialize<'T> stream
+
+    override x.ToString() = 
+        "LibFFXIV.ClientData.Data." + (
+                match x with
+                | Item -> "Item.bin"
+                | Recipe -> "Recipe.bin"
+                | CompanyCraftSequence -> "CompanyCraftSequence.bin"
+                | GilShopItem -> "GilShopItem.bin"
+                | TargetVersion -> "TargetVersion.txt")
+
+let ShowAllResources() = 
+    let assembly = Assembly.GetExecutingAssembly()
+    assembly.GetManifestResourceNames()
+    |> Array.iter (printfn "%s")
+
+
+(*
+//老版本的备份代码
+module LibFFXIV.Client.Utils
 open System
 open System.Configuration
 open System.IO
@@ -54,3 +101,4 @@ type SaintCoinachInstance private() =
     static let instance = 
             SaintCoinach.ARealmReversed(gameDirectory, SaintCoinach.Ex.Language.ChineseSimplified)
     static member Instance = instance
+    *)

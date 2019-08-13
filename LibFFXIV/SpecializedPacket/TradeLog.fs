@@ -26,6 +26,7 @@ type TradeLogRecord =
                 |> Array.filter (fun x -> IsByteArrayNotAllZero(x))
             for chunk in chunks do
                 use ms = new MemoryStream(chunk)
+                Logger.Log<TradeLogRecord>(chunk |> HexString.ToHex)
                 use r  = new BinaryReader(ms)
                 yield {
                     ItemID      = r.ReadUInt32()

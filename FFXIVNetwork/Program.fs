@@ -1,7 +1,7 @@
 ﻿open System
+open System.Diagnostics
 
-
-let logger = NLog.LogManager.GetCurrentClassLogger()
+let logger = NLog.LogManager.GetLogger("FFXIVNetwork")
 
         
 [<STAThread>]
@@ -13,14 +13,7 @@ let main argv =
     )
     logger.Info("正在加载数据")
     try
-        LibFFXIV.Client.Item.SaintCoinachItemProvider.GetInstance() |> ignore
-        logger.Info("数据加载结束")
-
-        if LibFFXIV.Client.ClientInfo.ClientVersion <> LibFFXIV.Network.Constants.TargetClientVersion then
-            Utils.UploadClientData <- false
-            printfn "客户端版本与数据包定义版本不匹配，已禁用数据上传"
-            printfn "当前版本 %s" LibFFXIV.Client.ClientInfo.ClientVersion
-
+        logger.Info("加载LibFFXIV.ClientData，数据定义为{0}", LibFFXIV.ClientData.TargetVersion.Version)
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
         let monitor = new Utils.FFXIVNetworkMonitorChs()
@@ -37,11 +30,23 @@ let main argv =
                 handler.HandlePacketMachina(epoch, data, LibFFXIV.Network.Constants.PacketDirection.In)
         monitor.MessageReceived <- new Machina.FFXIV.FFXIVNetworkMonitor.MessageReceivedDelegate(received)
 
-
-
         monitor.Start()
         logger.Info("Machina.FFXIV已启动")
 
+        let mutable gameVerChecked = false
+        let info = new Machina.ProcessTCPInfo()
+        while (not gameVerChecked) do 
+            let pid = info.GetProcessIDByWindowName(Utils.WindowName) |> int
+            let path = Utils.ProcessCheck.GetMainModuleFileName(Process.GetProcessById(pid))
+            if path.IsSome then
+                logger.Info("找到游戏进程{0}，准备校验版本", pid)
+                let path = IO.Path.Combine(IO.Path.GetDirectoryName(path.Value), "ffxivgame.ver")
+                let ver = IO.File.ReadAllText(path)
+                if ver = LibFFXIV.ClientData.TargetVersion.Version then
+                    logger.Info("版本校验通过，启用数据上传")
+                else
+                    logger.Error("版本校验失败，本地版本为{0}，定义版本为{1}", ver, LibFFXIV.ClientData.TargetVersion.Version)
+                gameVerChecked <- true
     with
     | e -> printfn "%s" (e.ToString())
     while true do 

@@ -116,6 +116,7 @@ type Chat =
     }
 
     static member ParseFromBytes(data : ByteArray) = 
+        Logger.Log<Chat>(data.ToString())
         use r = data.GetReader()
         {
             UserID  = r.ReadUInt64()

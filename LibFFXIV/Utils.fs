@@ -211,3 +211,21 @@ type XIVArray<'T> (cap : int) =
     member x.Reset() = 
         networkCompleted <- false
         Array.fill arr 0 cap None
+
+
+[<AbstractClassAttribute>]
+type IPacketParser() as x = 
+    let logger = NLog.LogManager.GetLogger(x.GetType().Name)
+
+    member internal x.Logger = logger
+
+module Logger = 
+    open System.Collections.Generic
+    let loggers = new Dictionary<Type, NLog.Logger>()
+
+    let Log<'T>(message : string) = 
+        let t = typeof<'T>
+        if not <|loggers.ContainsKey(t) then
+            loggers.Add(t, NLog.LogManager.GetLogger("Parser:" + t.Name))
+        let l = loggers.[t]
+        l.Trace(message)

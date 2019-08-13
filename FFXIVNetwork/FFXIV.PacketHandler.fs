@@ -4,7 +4,7 @@ open FFXIV.PacketHandlerBase
 open LibFFXIV.Network.Constants
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
-open LibFFXIV.Client.Item
+open LibFFXIV.ClientData
 open System.Collections.Generic
 
 type UserIDHandler() = 
@@ -56,7 +56,7 @@ type TradeLogPacketHandler() =
         sb {
             yield "====TradeLogData===="
             for log in tradeLogs.Records do
-                let i     = SaintCoinachItemProvider.GetInstance().FromId(log.ItemID |> int)
+                let i     = Item.LookupById(log.ItemID |> int)
                 let iName = 
                     if i.IsSome then
                         i.Value.ToString()
@@ -86,7 +86,7 @@ type MaketPacketHandler ()=
         sb {
             yield "====MarketData===="
             for data in mr do
-                let i = SaintCoinachItemProvider.GetInstance().FromId(data.Itemid |> int)
+                let i = Item.LookupById(data.Itemid |> int)
                 let date  = DateTimeOffset.FromUnixTimeSeconds(data.TimeStamp |> int64).ToLocalTime()
                 let price = data.Price
                 let count = data.Count

@@ -1,6 +1,6 @@
 ﻿module Utils
 open System
-open LibFFXIV.Client
+open LibFFXIV.ClientData
 open LibFFXIV.Network
 
 let dao = new LibXIVServer.MarketV2.MarketOrderDAO()
@@ -45,7 +45,7 @@ type StringQuery =
         | MaterialsRecGroup x -> x
 
     member x.GetOP() = 
-        let item = Item.SaintCoinachItemProvider.GetInstance().FromName(x.Name)
+        let item = Item.LookupByName(x.Name)
         let rm = Recipe.RecipeManager.GetInstance()
         if item.IsNone then
             [|
