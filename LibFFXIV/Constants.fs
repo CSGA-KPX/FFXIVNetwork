@@ -8,6 +8,7 @@ type Opcodes =
     | CharacterNameLookupReply = 0x018Eus // 4.5
     | Chat         = 0x00F7us // 4.5
     | LinkshellList = 0x0104us //4.5
+    | PlayerSpawn   = 0x0175us // 4.5
 
 type PacketTypes = 
     | None             = 0x0000us
@@ -18,6 +19,7 @@ type PacketTypes =
     | KeepAliveResponse= 0x0008us
     | ClientHandShake  = 0x0009us
     | ServerHandShake  = 0x000Aus       
+
 
 type MarketArea = 
   | LimsaLominsa = 0x0001

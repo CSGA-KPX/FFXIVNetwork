@@ -1,6 +1,37 @@
 namespace LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.Utils
+open LibFFXIV.Network.Constants
 
+type FFXIVSubPacket =
+    inherit PacketParserBase
+    val Size        : uint32
+    val SourceId    : uint32
+    val TargetId    : uint32
+    val Type        : PacketTypes
+    val Unknown     : uint16
+    val Data        : XIVBinaryReader
+
+    new (b : ByteArray) as x = 
+        let r = b.GetReader()
+        let headerSize = 0x10
+        let size = r.ReadUInt32() 
+        {
+            inherit PacketParserBase()
+            Size     = size
+            SourceId = r.ReadUInt32()
+            TargetId = r.ReadUInt32()
+            Type     = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(r.ReadUInt16())
+            Unknown  = r.ReadUInt16()
+            Data     = 
+                if (r.BytesLeft |> int) <> ((size|>int)-headerSize) then
+                    x.Logger.Fatal("SubPacketÎ´½áÊø, Data={0}", b.ToString())
+                r
+        }
+
+    member x.IsGamePacket() = 
+        x.Type = PacketTypes.GameMessage
+
+(*
 type FFXIVSubPacket = 
     {
         Size     : uint32
@@ -36,4 +67,4 @@ type FFXIVSubPacket =
 
             if not (r.IsEnd()) then
                 printfn "Subpacket Not END!!!!"
-        |]
+        |]*)

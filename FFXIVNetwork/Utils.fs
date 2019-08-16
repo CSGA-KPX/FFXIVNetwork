@@ -2,15 +2,7 @@
 open System
 open System.Reflection
 
-let logger = NLog.LogManager.GetCurrentClassLogger()
-
-type HexString = LibFFXIV.Network.Utils.HexString
-
-let mutable UploadClientData = false
-
-let mutable LogRawPacketData = true
-let mutable LogGamePacket    = true
-
+[<Literal>]
 let WindowName = "最终幻想XIV"
 
 type FFXIVNetworkMonitorChs() = 
@@ -49,8 +41,18 @@ type FFXIVNetworkMonitorChs() =
         sent.SetValue(x, box(null))
         recv.SetValue(x, box(null))
 
+let UploadClientData = false
+
+module RuntimeConfig = 
+    let mutable LogRawPacketData   = true
+    let mutable LogGamePacket      = true
+    let mutable VersionCheckPassed = false
+    let mutable CurrentWorld       = 0us
+
+    let CanUploadData() = 
+        VersionCheckPassed && UploadClientData && (CurrentWorld <> 0us)
+
 module UAC = 
-    open System
     open System.Diagnostics
     open System.Security.Principal
 
@@ -70,7 +72,6 @@ module UAC =
         with
         | _ -> RestartWithUAC()
         Environment.Exit(0)
-
 
 module ProcessCheck = 
     open System.Text

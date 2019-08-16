@@ -57,7 +57,7 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
     /// <param name="len">长度</param>
     member x.ReadFixedUTF8(len : int) = 
         let bytes = x.ReadBytes(len)
-        Text.Encoding.UTF8.GetString(bytes.[0 .. (Array.findIndex ((=) 0uy) bytes) - 1])
+        Encoding.UTF8.GetString(bytes).TrimEnd('\x00')
 
     /// <summary>
     /// 读取指定长度字节数组，而不提升位置
@@ -69,6 +69,9 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         x.BaseStream.Position <- origPos
         bytes
 
+    member x.PeekRestBytes() = 
+        x.PeekBytes(x.BytesLeft |> int)
+
     /// <summary>
     /// 读取指定长度字节为16进制字符串
     /// </summary>
@@ -77,12 +80,17 @@ type XIVBinaryReader(ms : IO.MemoryStream) =
         HexString.ToHex(x.ReadBytes(len))
 
     /// <summary>
+    /// 还剩多少数据
+    /// </summary>
+    member x.BytesLeft =
+        let bs = x.BaseStream
+        bs.Length - bs.Position
+
+    /// <summary>
     /// 读取剩余部分为数组
     /// </summary>
     member x.ReadRestBytes() = 
-        let bs = x.BaseStream
-        let len = bs.Length - bs.Position
-        x.ReadBytes(len |> int)
+        x.ReadBytes(x.BytesLeft |> int)
 
     /// <summary>
     /// 读取秒(uint32)单位的时间戳
@@ -128,6 +136,7 @@ type ByteArray(buf : byte[]) =
     new (hex : string) = 
         new ByteArray(HexString.ToBytes(hex))
 
+    /// 转换到HexString
     override x.ToString() = hex.Force()
 
     member x.GetBuffer()  = buf
@@ -213,11 +222,9 @@ type XIVArray<'T> (cap : int) =
         Array.fill arr 0 cap None
 
 
-[<AbstractClassAttribute>]
-type IPacketParser() as x = 
+type PacketParserBase() as x = 
     let logger = NLog.LogManager.GetLogger(x.GetType().Name)
-
-    member internal x.Logger = logger
+    member x.Logger = logger
 
 module Logger = 
     open System.Collections.Generic

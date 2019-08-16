@@ -68,8 +68,7 @@ type MarketPacket =
 
     static member private recordSize = 304/2 //112 detla = 40
 
-    static member ParseFromBytes(data : ByteArray) = 
-        use r = data.GetReader()
+    static member ParseFromBytes(r : XIVBinaryReader) = 
         let (chks, rst) = r.ReadRestBytesAsChunk(MarketPacket.recordSize, true)
 
         if rst.IsNone then

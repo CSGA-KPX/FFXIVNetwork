@@ -14,7 +14,7 @@ type TradeLogRecord =
         Count       : uint32
         IsHQ        : bool
         Unknown     : uint32
-        BuyerName  : string
+        BuyerName   : string
     }
     static member ParseFromBytes(bytes : byte[]) = 
         [|
@@ -46,8 +46,7 @@ type TradeLogPacket =
         ItemID : uint32
         Records: TradeLogRecord []
     }
-    static member ParseFromBytes(data : ByteArray) = 
-        use r = data.GetReader()
+    static member ParseFromBytes(r : XIVBinaryReader) = 
         let itemId = r.ReadUInt32()
         let restBytes = 
             let bs = r.BaseStream

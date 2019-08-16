@@ -79,22 +79,18 @@ type PacketHandler() as x =
                         
 
     member private x.LogGamePacketOne (gp : FFXIVGamePacket, direction, epoch) = 
-        let opcode = Utils.HexString.ToHex (BitConverter.GetBytes(gp.Opcode) |> Array.rev )
-        let ts     = gp.TimeStamp.ToLocalTime()
-        let data   = gp.Data.ToString()
-        let dir    = 
+        let dir = 
             match direction with
             | PacketDirection.In  -> "<<<<<"
             | PacketDirection.Out -> ">>>>>"
             | _ -> invalidArg "direction" "unknown"
-        plogger.Trace("TS:{2} {0} OP:{1} Data:{3}",dir, opcode, ts, data)
+        plogger.Trace("{0} {1}", dir, gp.ToString())
 
     member x.HandlePacketMachina (epoch : int64, data : byte [], direction : PacketDirection) = 
         try
             let data = new ByteArray(data)
-            let sp = FFXIVSubPacket.Parse(data).[0] //TODO
-            let spType = LanguagePrimitives.EnumOfValue<uint16, PacketTypes>(sp.Type)
-            match spType with
+            let sp = new FFXIVSubPacket(data)
+            match sp.Type with
             | PacketTypes.KeepAliveRequest
             | PacketTypes.KeepAliveResponse
             | PacketTypes.ClientHelloWorld
@@ -103,27 +99,26 @@ type PacketHandler() as x =
             | PacketTypes.ServerHandShake
                 -> ()
             | PacketTypes.GameMessage ->
-                if Utils.LogRawPacketData then
+                if Utils.RuntimeConfig.LogRawPacketData then
                     rawLogger.Trace(sp.Data.ToString())
-                let gp = FFXIVGamePacket.ParseFromBytes(sp.Data)
+                let gp = new FFXIVGamePacket(sp.Data)
                 x.LogGamePacketOne(gp, direction, epoch)
                 try
+                    let op = gp.Opcode
                     match direction with
                     | PacketDirection.In  ->
-                        let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
                         if handlersIn.ContainsKey(op) then
                             let (obj, method) = handlersIn.[op]
                             method.Invoke(obj, [| box gp |]) |> ignore
                     | PacketDirection.Out -> 
-                        let op = LanguagePrimitives.EnumOfValue<uint16, Opcodes>(gp.Opcode)
                         if handlersOut.ContainsKey(op) then
                             let (obj, method) = handlersOut.[op]
                             method.Invoke(obj, [| box gp |]) |> ignore
                     | _ -> invalidArg "direction" "unknown"
                 with
                 | e -> logger.Error("数据包处理错误:{0}, {1}", e.ToString(), sprintf "%A" gp)
-            | _ -> failwithf "未知子包类型%O" spType
+            | _ -> failwithf "未知子包类型%O" (sp.Type)
             
         with
         | e ->  
-            logger.Error("Error packet:{0}, {1}", e.ToString(), Utils.HexString.ToHex(data))
+            logger.Error("Error packet:{0}, {1}", e.ToString(), HexString.ToHex(data))

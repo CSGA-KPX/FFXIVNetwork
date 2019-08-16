@@ -16,9 +16,7 @@ type LinkshellListPacket =
         Records : LinkshellListRecord []
     }
 
-    static member ParseFromBytes(data : ByteArray) = 
-        use r = data.GetReader()
-
+    static member ParseFromBytes(r : XIVBinaryReader) = 
         let header = r.ReadBytes(8)
         let chunks, tail = r.ReadRestBytesAsChunk(72, false)
 
