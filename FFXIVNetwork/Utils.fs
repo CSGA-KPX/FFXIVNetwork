@@ -41,7 +41,7 @@ type FFXIVNetworkMonitorChs() =
         sent.SetValue(x, box(null))
         recv.SetValue(x, box(null))
 
-let UploadClientData = false
+let UploadClientData = true
 
 module RuntimeConfig = 
     let mutable LogRawPacketData   = true
@@ -50,7 +50,10 @@ module RuntimeConfig =
     let mutable CurrentWorld       = 0us
 
     let CanUploadData() = 
-        VersionCheckPassed && UploadClientData && (CurrentWorld <> 0us)
+        VersionCheckPassed && UploadClientData
+
+    let IsWorldReady() = 
+        CurrentWorld <> 0us
 
 module UAC = 
     open System.Diagnostics

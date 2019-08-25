@@ -1,11 +1,21 @@
 ﻿module TradeLogs
 open Nancy
 open Nancy.ModelBinding
-open LibFFXIV.Network
 open SQLite
-open LibXIVServer.Global
+open XIVServer.Global
 open System
 
+type DBTradeLog() = 
+    inherit LibXIVServer.TradeLogV2.ServerTradeLog()
+
+    [<Indexed(Name = "ItemId")>]
+    member x.ItemId = base.ItemId
+    [<Indexed(Name = "TimeStamp", Order=2)>]
+    member x.TimeStamp = base.TimeStamp
+    [<MaxLengthAttribute(20)>]
+    member x.BuyerName = x.BuyerName
+
+(*
 [<CLIMutableAttribute>]
 type DBTradeLog = 
     {
@@ -42,7 +52,7 @@ type DBTradeLog =
             SpecializedPacket.TradeLogRecord.IsHQ       = log.IsHQ
             SpecializedPacket.TradeLogRecord.Unknown    = log.Unknown
             SpecializedPacket.TradeLogRecord.BuyerName  = log.BuyerName
-        }
+        }*)
 
 [<CLIMutableAttribute>]
 type DBTradeLogUpdate = 
@@ -90,7 +100,7 @@ type TradeLogs() as x =
         let timespan = new System.TimeSpan(days |> int , 0, 0, 0)
         let targetTimestamp = DateTimeOffset.UtcNow.Subtract(timespan).ToUnixTimeSeconds()
         let res = db.Query<DBTradeLog>("select * from DBTradeLog where ItemID = ? and TimeStamp >= ?", item, targetTimestamp)
-        let test = res |> Seq.map (DBTradeLog.ToNetwork) |> Seq.toArray
+        let test = res |> Seq.toArray
         
         let updated = db.Query<DBTradeLogUpdate>("select * from DBTradeLogUpdate where ItemID = ?", item)
         if updated.Count = 0 then
@@ -99,3 +109,4 @@ type TradeLogs() as x =
             let upd = updated.[0]
             x.Response.AsJson(test).WithHeader("Last-Modified", upd.LastUpdate.ToString("R"))
 
+            

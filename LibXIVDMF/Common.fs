@@ -1,16 +1,11 @@
 ﻿module LibXIVServer.Common
 open System
+open System.Reflection
 open System.Threading
 open System.Net.Http
-open MBrace.FsPickler
 open MBrace.FsPickler.Json
-open System.Net.Http.Headers
-open System.Collections.Concurrent
 
-
-let APIHost = 
-    //"http://127.0.0.1:5000"
-    "https://xivnet.danmaku.org"
+let LocalDebugging = true
 
 let ToJson = FsPickler.CreateJsonSerializer(false, true)
 
@@ -49,13 +44,16 @@ type Result<'T> =
 
 
 type DAOUtils private () = 
-    let handler = new HttpClientHandler(Proxy = new System.Net.WebProxy("http://127.0.0.1:7777"), UseProxy = false)
+    let handler = new HttpClientHandler()
     let client = new HttpClient(handler)
     let utf8   = new Text.UTF8Encoding(false)
     let json   = FsPickler.CreateJsonSerializer(false, true)
-    let host   = "https://xivnet.danmaku.org"
-    //let host    = "http://127.0.0.1:5000"
-    
+    let host   = 
+        if LocalDebugging then
+            "http://127.0.0.1:5000"
+        else
+            "https://xivnet.danmaku.org"
+
     static let instance = new DAOUtils()
 
     member x.HTTP       = client
@@ -108,12 +106,34 @@ type DAOBase<'T>() as x =
     member internal x.DoPut(url : string, obj) = 
         let task = 
             async {
-                let content= new StringContent(utils.JSON.PickleToString(obj), utils.UTF8, "application/json")
+                let json = utils.JSON.PickleToString(obj)
+                let content= new StringContent(json, utils.UTF8, "application/json")
+                logger.Info("Put {0}: {1}", utils.Host + url, json)
                 let! response =  utils.HTTP.PutAsync(utils.Host + url, content) |> Async.AwaitTask
                 let! str = response.Content.ReadAsStringAsync() |> Async.AwaitTask
                 let code = response.StatusCode.ToString()
-                sprintf "Server resp: %s, code:%s" str code
+                sprintf "Server resp: %s, code:%s" str.[0..100] code
                 |> logger.Info
             }
         task |> Async.Start
         
+
+[<RequireQualifiedAccessAttribute>]
+module PropCopier = 
+    let private sourceFlags = BindingFlags.Public ||| BindingFlags.Instance
+    let private targetFlags = BindingFlags.Public ||| BindingFlags.Instance// ||| BindingFlags.DeclaredOnly 
+    let private getPropKey (p : PropertyInfo) = (sprintf "%s|%s" (p.Name) (p.PropertyType.Name))
+
+    let Copy(source, target) = 
+        let sourceProps = 
+            source.GetType().GetProperties(sourceFlags)
+            |> Array.map (fun x -> getPropKey(x), x)
+        let targetProps = 
+            target.GetType().GetProperties(targetFlags)
+            |> Array.map (fun x -> getPropKey(x), x)
+            |> readOnlyDict
+
+        for (key, p) in sourceProps do 
+                let toValue = p.GetValue(source)
+                printfn "%A <- %A" key toValue
+                targetProps.[key].SetValue(target, toValue)

@@ -1,4 +1,4 @@
-﻿module LibXIVServer.Global
+﻿module XIVServer.Global
 open System
 open SQLite
 open MBrace.FsPickler.Json

@@ -20,40 +20,40 @@ type PlayerSpawnHandler() =
 type UserIDHandler() = 
     inherit PacketHandlerBase()
 
-    let cache = new HashSet<uint64>()
+    let cache = new HashSet<string>()
     let dao   = new LibXIVServer.UsernameMapping.UsernameMappingDAO()
 
     [<PacketHandleMethodAttribute(Opcodes.Chat, PacketDirection.In)>]
     member x.HandleChat(gp : FFXIVGamePacket) = 
-        let r = Chat.ParseFromBytes(gp.Data)
+        let r = new Chat(gp.Data)
         let ct = Microsoft.FSharp.Core.LanguagePrimitives.EnumOfValue<uint16, ChatType>(r.ChatType)
-        x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.Username, r.UserID, r.ServerID, r.Text)
+        x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.UserName, r.UserId, r.ServerId, r.Text)
 
-        if (not <| cache.Contains(r.UserID)) && Utils.RuntimeConfig.CanUploadData() then
-            dao.Put({UserID = r.UserID; Username = r.Username})
-            cache.Add(r.UserID) |> ignore
+        if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
+            dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
+            cache.Add(r.UserId) |> ignore
 
     [<PacketHandleMethodAttribute(Opcodes.LinkshellList, PacketDirection.In)>]
     member x.HandleLinkshellList(gp : FFXIVGamePacket) = 
-        let p = LinkshellListPacket.ParseFromBytes(gp.Data)
+        let p = new LinkshellListPacket(gp.Data)
         let hex = LibFFXIV.Network.Utils.HexString.ToHex(p.Header)
         x.Logger.Info("LinkshellListHandler Header:{0}--", hex)
         for r in p.Records do 
-            x.Logger.Info("{0}({1})@{2}", r.UserName, r.UserID, r.ServerID)
-            if (not <| cache.Contains(r.UserID)) && Utils.RuntimeConfig.CanUploadData() then
-                dao.Put({UserID = r.UserID; Username = r.UserName})
-                cache.Add(r.UserID) |> ignore
+            x.Logger.Info("{0}({1})@{2}", r.UserName, r.UserId, r.ServerId)
+            if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
+                dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
+                cache.Add(r.UserId) |> ignore
 
         x.Logger.Info("--LinkshellListHandler Header:{0}--", hex)
 
     [<PacketHandleMethodAttribute(Opcodes.CharacterNameLookupReply, PacketDirection.In)>]
     member x.HandleCharacterNameLookupReply(gp : FFXIVGamePacket) = 
-        let r = CharacterNameLookupReply.ParseFromBytes(gp.Data)
-        x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserID, r.Username)
+        let r = new CharacterNameLookupReply(gp.Data)
+        x.Logger.Info("收到用户名查询结果： {0} => {1}", r.UserId, r.UserName)
         
         //修正：有些奇怪的用户名第一个字节为0x00
-        if Utils.RuntimeConfig.CanUploadData() && (not <| String.IsNullOrEmpty(r.Username)) then
-            dao.Put(r)
+        if Utils.RuntimeConfig.CanUploadData() && (not <| String.IsNullOrEmpty(r.UserName)) then
+            dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
@@ -62,16 +62,16 @@ type TradeLogPacketHandler() =
 
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData, PacketDirection.In)>]
     member x.HandleData (gp : FFXIVGamePacket) = 
-        let tradeLogs = TradeLogPacket.ParseFromBytes(gp.Data)
+        let tradeLogs = new TradeLogPacket(gp.Data)
         sb {
             yield "====TradeLogData===="
             for log in tradeLogs.Records do
-                let i     = Item.LookupById(log.ItemID |> int)
+                let i     = Item.LookupById(log.ItemId |> int)
                 let iName = 
                     if i.IsSome then
                         i.Value.ToString()
                     else
-                        sprintf "未知物品 XIVId(%i)" log.ItemID
+                        sprintf "未知物品 XIVId(%i)" log.ItemId
                 let date  = DateTimeOffset.FromUnixTimeSeconds(log.TimeStamp |> int64).ToLocalTime()
                 yield sprintf "%O %s P:%i C:%i HQ:%b Buyer:%s" date iName log.Price log.Count log.IsHQ log.BuyerName
                     
@@ -80,21 +80,26 @@ type TradeLogPacketHandler() =
         |> buildString
         |> x.Logger.Info
 
-        if Utils.RuntimeConfig.CanUploadData() then
+        if Utils.RuntimeConfig.CanUploadData() && Utils.RuntimeConfig.IsWorldReady() then
             let itemId = tradeLogs.ItemID
-            dao.Put(itemId, tradeLogs.Records)
+            let sl = 
+                tradeLogs.Records
+                |> Array.map (fun x -> 
+                    let l = new LibXIVServer.TradeLogV2.ServerTradeLog(Utils.RuntimeConfig.CurrentWorld)
+                    l.DoPropCopy(x))
+            dao.Put(itemId, sl)
 
-type MaketPacketHandler ()= 
+type MarketPacketHandler ()= 
     inherit PacketHandlerBase()
 
-    let arr = LibFFXIV.Network.Utils.XIVArray<MarketRecord>()
+    let arr = LibFFXIV.Network.Utils.XIVArray<MarketOrder>()
     let dao = LibXIVServer.MarketV2.MarketOrderDAO()
 
-    member x.LogMarketData (mr : MarketRecord []) = 
+    member x.LogMarketData (mr : MarketOrder []) = 
         sb {
             yield "====MarketData===="
             for data in mr do
-                let i = Item.LookupById(data.Itemid |> int)
+                let i = Item.LookupById(data.ItemId |> int)
                 let date  = DateTimeOffset.FromUnixTimeSeconds(data.TimeStamp |> int64).ToLocalTime()
                 let price = data.Price
                 let count = data.Count
@@ -104,25 +109,31 @@ type MaketPacketHandler ()=
                     if i.IsSome then
                         i.Value.ToString()
                     else
-                        sprintf "未知物品 XIVId(%i)" data.Itemid
+                        sprintf "未知物品 XIVId(%i)" data.ItemId
                 yield sprintf "%O %s P:%i C:%i HQ:%b Meld:%i Seller:%s" date str price count isHQ meld (data.Name)
             yield "====MarketDataEnd===="
         } |> buildString |> x.Logger.Info
-    member x.LogMarketRecords (mr : MarketRecord []) = 
-        for m in mr do 
-            x.Logger.Trace(sprintf "%A" m)
 
-    member x.UploadMarketData (mr : MarketRecord []) = 
+    member x.LogMarketRecords (mr : MarketOrder []) = 
+        for m in mr do 
+            () //x.Logger.Trace(m.ToString())
+
+    member x.UploadMarketData (mr : MarketOrder []) = 
         NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
-        let itemId = mr.[0].Itemid
-        dao.Put(itemId, mr)
+        let sr = 
+            mr 
+            |> Array.map (fun x -> 
+                let o = new LibXIVServer.MarketV2.ServerMarkerOrder(Utils.RuntimeConfig.CurrentWorld)
+                o.DoPropCopy(x))
+        let itemId = mr.[0].ItemId
+        dao.Put(itemId, sr)
 
     [<PacketHandleMethodAttribute(Opcodes.Market, PacketDirection.In)>]
     member x.HandleMarketOrderFragment(gp : FFXIVGamePacket) = 
-        let frag = MarketPacket.ParseFromBytes(gp.Data)
+        let frag = new MarketOrderPacket(gp.Data)
         let reset = 
-            let itemID = frag.Records.[0].Itemid
-            arr.First.IsSome && (arr.First.Value.Itemid <> itemID)
+            let itemID = frag.Records.[0].ItemId
+            arr.First.IsSome && (arr.First.Value.ItemId <> itemID)
         if reset then
             arr.Reset()
         arr.AddSlice(frag.CurrIdx |> int, frag.NextIdx |> int, frag.Records)
@@ -131,6 +142,6 @@ type MaketPacketHandler ()=
             let data = arr.Data
             x.LogMarketData(data)
             x.LogMarketRecords(data)
-            if Utils.RuntimeConfig.CanUploadData() then
+            if Utils.RuntimeConfig.CanUploadData() && Utils.RuntimeConfig.IsWorldReady() then
                 x.UploadMarketData(data)
             arr.Reset()

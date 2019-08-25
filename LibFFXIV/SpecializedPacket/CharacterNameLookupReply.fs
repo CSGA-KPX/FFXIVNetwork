@@ -1,15 +1,13 @@
 ﻿namespace LibFFXIV.Network.SpecializedPacket
-open System
 open LibFFXIV.Network.Utils
 
 type CharacterNameLookupReply = 
-    {
-        UserID   : uint64
-        Username : string
-    }
+    inherit PacketParserBase
+    val UserId   : string
+    val UserName : string
 
-    static member ParseFromBytes(r : XIVBinaryReader) = 
+    new (r : XIVBinaryReader) = 
         {
-            UserID   = r.ReadUInt64()
-            Username = r.ReadFixedUTF8(32)
+            UserId   = r.ReadHexString(8)
+            UserName = r.ReadFixedUTF8(32)
         }

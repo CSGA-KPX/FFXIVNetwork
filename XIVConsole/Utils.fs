@@ -1,13 +1,12 @@
 ﻿module Utils
 open System
 open LibFFXIV.ClientData
-open LibFFXIV.Network
 
 let dao = new LibXIVServer.MarketV2.MarketOrderDAO()
 
 type DisplayOP = 
     | Query  of string * Item.ItemRecord * float
-    | Result of string * Item.ItemRecord * LibXIVServer.Common.Result<SpecializedPacket.MarketRecord []> * float
+    | Result of string * Item.ItemRecord * LibXIVServer.Common.Result<LibXIVServer.MarketV2.ServerMarkerOrder []> * float
     | BeginSum
     | EndSum of string
     | EmptyLine
@@ -88,7 +87,7 @@ type StringQuery =
                 yield EmptyLine
             |]
 
-let internal TakeMarketSample (samples : SpecializedPacket.MarketRecord [] , cutPct : int) = 
+let internal TakeMarketSample (samples : LibXIVServer.MarketV2.ServerMarkerOrder [] , cutPct : int) = 
     [|
         //(price, count)
         let samples = samples |> Array.sortBy (fun x -> x.Price)
@@ -133,7 +132,7 @@ type StdEv =
             Deviation = 0.0
         }
 
-let GetStdEv(market : SpecializedPacket.MarketRecord [] , cutPct : int) = 
+let GetStdEv(market : LibXIVServer.MarketV2.ServerMarkerOrder [] , cutPct : int) = 
     let samples = TakeMarketSample(market, cutPct)
     let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
     let average = 

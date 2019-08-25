@@ -222,17 +222,45 @@ type XIVArray<'T> (cap : int) =
         Array.fill arr 0 cap None
 
 
-type PacketParserBase() as x = 
-    let logger = NLog.LogManager.GetLogger(x.GetType().Name)
-    member x.Logger = logger
+[<AbstractClass>]
+type PacketParserBase() = 
 
-module Logger = 
-    open System.Collections.Generic
-    let loggers = new Dictionary<Type, NLog.Logger>()
+    override x.ToString() = 
+        let sb = new System.Text.StringBuilder()
+        for p in x.GetType().GetProperties(BindingFlags.Public ||| BindingFlags.Instance) do 
+            if p.PropertyType = typeof<byte []> then
+                let hex = p.GetValue(x, null) :?> byte [] |> HexString.ToHex
+                sb.AppendFormat("{0} = {1}{2}", p.Name, hex, System.Environment.NewLine) |> ignore
+            else
+                sb.AppendFormat("{0} = {1}{2}", p.Name, p.GetValue(x, null), System.Environment.NewLine) |> ignore
+        sb.ToString()
 
-    let Log<'T>(message : string) = 
+open System.Collections.Generic
+type Logger = 
+    static member private loggers = new Dictionary<Type, NLog.Logger>()
+    static member private getLogger<'T>() = 
         let t = typeof<'T>
-        if not <|loggers.ContainsKey(t) then
-            loggers.Add(t, NLog.LogManager.GetLogger("Parser:" + t.Name))
-        let l = loggers.[t]
-        l.Trace(message)
+        if not <| Logger.loggers.ContainsKey(t) then
+            let logger = NLog.LogManager.GetLogger("Parser:" + t.Name)
+            Logger.loggers.Add(t, NLog.LogManager.GetLogger("Parser:" + t.Name))
+            logger
+        else
+            Logger.loggers.[t]
+
+    static member Trace<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Trace(message, args)
+
+    static member Debug<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Debug(message, args)
+
+    static member Info<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Info(message, args)
+
+    static member Warn<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Warn(message, args)
+
+    static member Error<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Error(message, args)
+
+    static member Fatal<'T>(message : string, [<ParamArray>] args : Object []) = 
+        Logger.getLogger<'T>().Fatal(message, args)

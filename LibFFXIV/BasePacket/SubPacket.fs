@@ -11,7 +11,7 @@ type FFXIVSubPacket =
     val Unknown     : uint16
     val Data        : XIVBinaryReader
 
-    new (b : ByteArray) as x = 
+    new (b : ByteArray)= 
         let r = b.GetReader()
         let headerSize = 0x10
         let size = r.ReadUInt32() 
@@ -24,7 +24,7 @@ type FFXIVSubPacket =
             Unknown  = r.ReadUInt16()
             Data     = 
                 if (r.BytesLeft |> int) <> ((size|>int)-headerSize) then
-                    x.Logger.Fatal("SubPacketÎ´½áÊø, Data={0}", b.ToString())
+                    Logger.Fatal<FFXIVSubPacket>("SubPacketÎ´½áÊø, Data={0}", b.ToString())
                 r
         }
 

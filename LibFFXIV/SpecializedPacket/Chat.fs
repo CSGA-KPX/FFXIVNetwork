@@ -105,6 +105,26 @@ type ChatType =
     | Unused99 = 99us
     | Unused100 = 100us
 
+
+type Chat = 
+    inherit PacketParserBase
+    val UserId  : string
+    val Unknown : uint32
+    val ServerId: uint16
+    val ChatType: uint16
+    val UserName: string //  32 byte fixed
+    val Text    : string //2048 bytes fixed
+
+    new (r : XIVBinaryReader) = 
+        {
+            UserId  = r.ReadHexString(8)
+            Unknown = r.ReadUInt32()
+            ServerId= r.ReadUInt16()
+            ChatType= r.ReadUInt16()
+            UserName= r.ReadFixedUTF8(32)
+            Text    = r.ReadFixedUTF8(2048)
+        }
+(*
 type Chat = 
     {
         UserID  : uint64
@@ -123,4 +143,4 @@ type Chat =
             ChatType= r.ReadUInt16()
             Username= r.ReadFixedUTF8(32)
             Text    = r.ReadFixedUTF8(2048)
-        }
+        }*)

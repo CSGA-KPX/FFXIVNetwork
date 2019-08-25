@@ -1,17 +1,23 @@
 ﻿module MarketOrders
-open System
 open Nancy
-open Nancy.Extensions
-open Nancy.IO
-open Nancy.ModelBinding
-open LibFFXIV.Network
 open SQLite
-open LibXIVServer.Global
-
+open System
+open Nancy.IO
+open Nancy.Extensions
+open XIVServer.Global
 //orders/
 //      / raw/itemid    GET/PUT  读写MarketRecord []
 
 
+type DBMarketRecord () = 
+    inherit LibXIVServer.MarketV2.ServerMarkerOrder(0us) 
+
+    [<Indexed(Name = "UserId")>]
+    member x.UserId = base.UserId
+
+    [<Indexed(Name = "ItemId")>]
+    member x.ItemId = base.ItemId
+(*
 [<CLIMutableAttribute>]
 type DBMarketRecord = 
     {
@@ -75,7 +81,7 @@ type DBMarketRecord =
             SpecializedPacket.MarketRecord.Market = r.Market
             SpecializedPacket.MarketRecord.Unknown4 = r.Unknown4
         }
-
+*)
 [<CLIMutableAttribute>]
 type DBOrdersSnapshot =
     {
@@ -95,9 +101,9 @@ type DBMarketRecordOrderIDUpdate =
         ///UTC time
         LastAccessTime : System.DateTime
     }
-    static member FromOrder (o : SpecializedPacket.MarketRecord) = 
+    static member FromOrder (o : DBMarketRecord) = 
         {
-            OrderID = o.OrderID
+            OrderID = o.OrderId
             Price   = o.Price
             LastAccessTime = DateTime.UtcNow
         }
@@ -138,12 +144,12 @@ type MarketOrders() as x =
 
     member private x.PutOrders(itemId) =
         let str = RequestStream.FromStream(x.Request.Body).AsString()
-        let logs = Json.UnPickleOfString<SpecializedPacket.MarketRecord []>(str)
+        let logs = Json.UnPickleOfString<DBMarketRecord[]>(str)
         
         if isNull logs then
             sprintf "Updated %i failed: Data error" itemId
         else
-            if logs |> Array.exists (fun x -> x.Itemid <> itemId) then
+            if logs |> Array.exists (fun x -> x.ItemId <> itemId) then
                 sprintf "Updated %i failed: ItemID mismatch" itemId
             else
                 let obj = {OrdersJSON = str; ItemID = itemId; LastUpdate = DateTime.UtcNow;}
@@ -155,10 +161,10 @@ type MarketOrders() as x =
                         //Add Orders
                         for o in logs do 
                             //Check for existence
-                            let result = db.Query<ExistsResult>("SELECT EXISTS(SELECT 1 FROM DBMarketRecordOrderIDUpdate WHERE OrderID = ? AND Price = ?) AS Result", o.OrderID, o.Price).[0].Result
+                            let result = db.Query<ExistsResult>("SELECT EXISTS(SELECT 1 FROM DBMarketRecordOrderIDUpdate WHERE OrderID = ? AND Price = ?) AS Result", o.OrderId, o.Price).[0].Result
                             if result = 0u then
                                  //If not exist, then insert
-                                db.Insert(o |> DBMarketRecord.ToDB) |> ignore
+                                db.Insert(o) |> ignore
                                 incr count
                         //Update all caches
                         db.InsertAll(logs |> Array.map (DBMarketRecordOrderIDUpdate.FromOrder), "OR REPLACE", true) |> ignore

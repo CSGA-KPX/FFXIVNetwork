@@ -1,50 +1,45 @@
-﻿module UsernameMapping
-open System
+﻿namespace XIVServer.Route.UsernameMapping
 open Nancy
 open Nancy.Extensions
 open Nancy.IO
-open Nancy.ModelBinding
-open LibFFXIV.Network
 open SQLite
-open LibXIVServer.Global
+open XIVServer.Global
 
-[<CLIMutableAttribute>]
-type DBUsername =
-    {
-        [<PrimaryKeyAttribute>]
-        UserID     : int64
-        Username   : string
-    }
+type DBUserName() = 
+    inherit LibXIVServer.UsernameMapping.UserInfo()
+
+    [<PrimaryKeyAttribute>]
+    member val UserId = base.UserId with get, set
 
 type MarketOrders() as x = 
     inherit Nancy.NancyModule()
     do
-        db.CreateTable<DBUsername>() |> ignore
+        db.CreateTable<DBUserName>() |> ignore
         
-        x.Put("/userid/{userId:long}", fun parms -> 
+        x.Put("/userid/{userId}", fun parms -> 
             let p = parms :?> Nancy.DynamicDictionary
-            let itemId = p.["userId"] |> System.Convert.ToInt64
+            let itemId = p.["userId"] |> string
 
             let res = x.PutUsername(itemId)
             
             x.Response.AsText(res) :> obj)
 
-        x.Get("/userid/{userId:long}", fun parms -> 
+        x.Get("/userid/{userId}", fun parms -> 
             let p = parms :?> Nancy.DynamicDictionary
-            let itemId = p.["userId"] |> System.Convert.ToInt64
+            let itemId = p.["userId"] |> string
 
             x.GetUsername(itemId) :> obj )
 
     member private x.PutUsername(userId) =
         let str = RequestStream.FromStream(x.Request.Body).AsString()
-        let r = Json.UnPickleOfString<SpecializedPacket.CharacterNameLookupReply>(str)
-        let dbobj = {UserID = r.UserID |> int64; Username = r.Username}
-        let num = db.InsertOrReplace(dbobj)
-        sprintf "Update user %i -> %s complete, %i row affected." r.UserID r.Username num
+        printfn "%s" str
+        let r = Json.UnPickleOfString<DBUserName>(str)
+        let num = db.InsertOrReplace(r)
+        sprintf "Update user %s -> %s complete, %i row affected." r.UserId r.UserName num
 
     member private x.GetUsername(userId) =
-        let res = db.Query<DBUsername>("select * from DBUsername where UserID = ?", userId)
+        let res = db.Query<DBUserName>("select * from DBUsername where UserID = ?", userId)
         if res.Count = 0 then
-            x.Response.AsJson({UserID = userId; Username = ""}).WithStatusCode(HttpStatusCode.NotFound)
+            x.Response.AsJson(new DBUserName()).WithStatusCode(HttpStatusCode.NotFound)
         else
             x.Response.AsJson(res.[0]).WithHeader("Content-Type", "application/json")
