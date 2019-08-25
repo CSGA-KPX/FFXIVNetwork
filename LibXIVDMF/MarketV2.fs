@@ -1,6 +1,5 @@
 ﻿module LibXIVServer.MarketV2
 open System
-open MBrace.FsPickler
 open LibFFXIV.Network
 open LibXIVServer.Common
 

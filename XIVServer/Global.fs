@@ -1,9 +1,6 @@
 ﻿module XIVServer.Global
 open System
 open SQLite
-open MBrace.FsPickler.Json
-
-
 let internal db = 
     let dbpath = 
         if Type.GetType("Mono.Runtime") <> null then
@@ -17,4 +14,3 @@ let internal db =
 
 
 let UTF8   = new System.Text.UTF8Encoding(false)
-let Json = FsPickler.CreateJsonSerializer(false, true)

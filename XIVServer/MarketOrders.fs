@@ -13,10 +13,10 @@ type DBMarketRecord () =
     inherit LibXIVServer.MarketV2.ServerMarkerOrder(0us) 
 
     [<Indexed(Name = "UserId")>]
-    member x.UserId = base.UserId
+    member val UserId = base.UserId with get, set
 
     [<Indexed(Name = "ItemId")>]
-    member x.ItemId = base.ItemId
+    member val ItemId = base.ItemId with get, set
 (*
 [<CLIMutableAttribute>]
 type DBMarketRecord = 
@@ -144,7 +144,8 @@ type MarketOrders() as x =
 
     member private x.PutOrders(itemId) =
         let str = RequestStream.FromStream(x.Request.Body).AsString()
-        let logs = Json.UnPickleOfString<DBMarketRecord[]>(str)
+        let logs = Newtonsoft.Json.JsonConvert.DeserializeObject<DBMarketRecord[]>(str)
+            //Json.UnPickleOfString<DBMarketRecord[]>(str)
         
         if isNull logs then
             sprintf "Updated %i failed: Data error" itemId

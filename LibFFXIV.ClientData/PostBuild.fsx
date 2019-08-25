@@ -4,7 +4,6 @@
 #r @"DotSquish.dll"
 #r @"EntityFramework.dll"
 #r @"SaintCoinach.dll"
-#r @"..\packages\FsPickler.5.2.2\lib\net45\FsPickler.dll"
 #r @"Mono.cecil\Mono.Cecil.dll"
 #r @"Mono.cecil\Mono.Cecil.Mdb.dll"
 #r @"Mono.cecil\Mono.Cecil.Pdb.dll"
@@ -14,13 +13,12 @@
 open System
 open System.IO
 open SaintCoinach
-open MBrace.FsPickler
+open Newtonsoft.Json
 open Mono.Cecil
 
 let outputPath = Directory.GetCurrentDirectory()
 Directory.SetCurrentDirectory(@"K:\Apps\SaintCoinach\SaintCoinach\bin\Debug\")
 
-let binarySerializer = FsPickler.CreateBinarySerializer()
 let GameDirectory = @"G:\FF14\最终幻想XIV"
 
 printfn "Initializing SaintCoinach at %s" GameDirectory
@@ -32,8 +30,7 @@ let XivItemToRecord(item : #Xiv.ItemBase) =
 
 
 printfn "Extracting client data version."
-let version = 
-    Text.UnicodeEncoding.Unicode.GetBytes(realm.GameVersion)
+let version = realm.GameVersion
 
 printfn "Extracting client items."
 let item = 
@@ -41,7 +38,7 @@ let item =
         for item in realm.GameData.Items do 
             yield XivItemToRecord(item)
     |]
-    |> binarySerializer.Pickle
+    |> JsonConvert.SerializeObject
 
 printfn "Extracting client recipes."
 let recipe = 
@@ -62,7 +59,7 @@ let recipe =
                 LibFFXIV.ClientData.Recipe.ProductCount  = count
             }
     |]
-    |> binarySerializer.Pickle
+    |> JsonConvert.SerializeObject
 
 printfn "Extracting client CompanyCraftSequence."
 let gcs = 
@@ -82,7 +79,7 @@ let gcs =
                 LibFFXIV.ClientData.Recipe.ProductCount  = 1.0
             }
     |]
-    |> binarySerializer.Pickle
+    |> JsonConvert.SerializeObject
 
 printfn "Extracting client GilShop."
 let shopitem = 
@@ -96,7 +93,7 @@ let shopitem =
                     LibFFXIV.ClientData.GilShopItem.Price    = price
                 }
     |]
-    |> binarySerializer.Pickle
+    |> JsonConvert.SerializeObject
 
 
 let p = new ReaderParameters(ReadSymbols = true, InMemory = true)
@@ -104,8 +101,9 @@ let output = Path.Combine(outputPath,"LibFFXIV.ClientData.dll")
 
 printfn "Reading %s" output
 using (AssemblyDefinition.ReadAssembly(output, p)) (fun assembly ->
-    let addRes(enum : LibFFXIV.ClientData.Utils.Resource , data : byte[]) = 
-        assembly.MainModule.Resources.Add(new EmbeddedResource(enum.ToString(), ManifestResourceAttributes.Public, data))
+    let addRes(enum : LibFFXIV.ClientData.Utils.Resource , data : string) = 
+        let bytes = (new System.Text.UTF8Encoding(false)).GetBytes(data)
+        assembly.MainModule.Resources.Add(new EmbeddedResource(enum.ToString(), ManifestResourceAttributes.Public, bytes))
 
     addRes(LibFFXIV.ClientData.Utils.Resource.TargetVersion, version)
     addRes(LibFFXIV.ClientData.Utils.Resource.Item, item)

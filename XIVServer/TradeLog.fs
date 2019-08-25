@@ -9,11 +9,11 @@ type DBTradeLog() =
     inherit LibXIVServer.TradeLogV2.ServerTradeLog()
 
     [<Indexed(Name = "ItemId")>]
-    member x.ItemId = base.ItemId
+    member val ItemId = base.ItemId with get, set
     [<Indexed(Name = "TimeStamp", Order=2)>]
-    member x.TimeStamp = base.TimeStamp
+    member val TimeStamp = base.TimeStamp with get, set
     [<MaxLengthAttribute(20)>]
-    member x.BuyerName = x.BuyerName
+    member val BuyerName = base.BuyerName with get, set
 
 (*
 [<CLIMutableAttribute>]

@@ -3,11 +3,8 @@ open System
 open System.Reflection
 open System.Threading
 open System.Net.Http
-open MBrace.FsPickler.Json
 
-let LocalDebugging = true
-
-let ToJson = FsPickler.CreateJsonSerializer(false, true)
+let LocalDebugging = false
 
 let UTF8   = new Text.UTF8Encoding(false)
 
@@ -47,7 +44,6 @@ type DAOUtils private () =
     let handler = new HttpClientHandler()
     let client = new HttpClient(handler)
     let utf8   = new Text.UTF8Encoding(false)
-    let json   = FsPickler.CreateJsonSerializer(false, true)
     let host   = 
         if LocalDebugging then
             "http://127.0.0.1:5000"
@@ -58,7 +54,6 @@ type DAOUtils private () =
 
     member x.HTTP       = client
     member x.UTF8       = utf8
-    member x.JSON       = json
     member x.Host       = host
 
     static member Instance = instance
@@ -90,7 +85,7 @@ type DAOBase<'T>() as x =
 
             let record = 
                 if res.IsSuccessStatusCode then
-                    Some(utils.JSON.UnPickleOfString<'T>(resp))
+                    Some(Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(resp))
                 else
                     logger.Info("{0}.Get() 失败 状态码：{1}",x.GetType().Name, res.StatusCode)
                     None
@@ -106,13 +101,13 @@ type DAOBase<'T>() as x =
     member internal x.DoPut(url : string, obj) = 
         let task = 
             async {
-                let json = utils.JSON.PickleToString(obj)
+                let json = Newtonsoft.Json.JsonConvert.SerializeObject(obj)
                 let content= new StringContent(json, utils.UTF8, "application/json")
-                logger.Info("Put {0}: {1}", utils.Host + url, json)
+                //logger.Info("Put {0}: {1}", utils.Host + url, json)
                 let! response =  utils.HTTP.PutAsync(utils.Host + url, content) |> Async.AwaitTask
                 let! str = response.Content.ReadAsStringAsync() |> Async.AwaitTask
                 let code = response.StatusCode.ToString()
-                sprintf "Server resp: %s, code:%s" str.[0..100] code
+                sprintf "Server resp: %s, code:%s" str code
                 |> logger.Info
             }
         task |> Async.Start
@@ -135,5 +130,4 @@ module PropCopier =
 
         for (key, p) in sourceProps do 
                 let toValue = p.GetValue(source)
-                printfn "%A <- %A" key toValue
                 targetProps.[key].SetValue(target, toValue)

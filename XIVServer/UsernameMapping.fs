@@ -32,8 +32,7 @@ type MarketOrders() as x =
 
     member private x.PutUsername(userId) =
         let str = RequestStream.FromStream(x.Request.Body).AsString()
-        printfn "%s" str
-        let r = Json.UnPickleOfString<DBUserName>(str)
+        let r = Newtonsoft.Json.JsonConvert.DeserializeObject<DBUserName>(str)
         let num = db.InsertOrReplace(r)
         sprintf "Update user %s -> %s complete, %i row affected." r.UserId r.UserName num
 

@@ -1,7 +1,7 @@
 ﻿module LibFFXIV.ClientData.Utils
 open System.IO
 open System.Reflection
-open MBrace.FsPickler
+open Newtonsoft.Json
 
 let TryGetToOption (x : bool, y: 'Value) = 
     if x then
@@ -9,7 +9,6 @@ let TryGetToOption (x : bool, y: 'Value) =
     else
         None
 
-let internal bs = FsPickler.CreateBinarySerializer()
 type Resource = 
     | Item
     | Recipe
@@ -20,13 +19,11 @@ type Resource =
     member x.ReadText() = 
         let assembly = Assembly.GetExecutingAssembly()
         use stream = assembly.GetManifestResourceStream(x.ToString())
-        use reader = new StreamReader(stream, System.Text.Encoding.Unicode)
+        use reader = new StreamReader(stream, System.Text.Encoding.UTF8)
         reader.ReadToEnd()
 
     member x.ReadBinary<'T>() = 
-        let assembly = Assembly.GetExecutingAssembly()
-        use stream = assembly.GetManifestResourceStream(x.ToString())
-        bs.Deserialize<'T> stream
+        JsonConvert.DeserializeObject<'T>(x.ReadText())
 
     override x.ToString() = 
         "LibFFXIV.ClientData.Data." + (
