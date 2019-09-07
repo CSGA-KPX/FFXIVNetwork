@@ -9,7 +9,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>FFXIVNetwork</RootNamespace>
     <AssemblyName>FFXIVNetwork</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.3.0</TargetFSharpCoreVersion>
     <Name>FFXIVNetwork</Name>
@@ -85,11 +85,11 @@
     <Compile Include="FFXIV.PacketHandler.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
-    <Content Include="packages.config" />
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="FFXIVNetwork.exe.manifest" />
+    <Content Include="packages.config" />
     <None Include="NLog.xsd" />
   </ItemGroup>
   <ItemGroup>
@@ -135,7 +135,6 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.ValueTuple">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml" />
