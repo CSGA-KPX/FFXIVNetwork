@@ -4,6 +4,7 @@ open System
 [<CLIMutable>]
 type FableMarketOrder = 
     {
+        Id          : string
         OrderId     : uint64
         RetainerId  : string
         UserId      : string
@@ -25,8 +26,12 @@ type FableMarketOrder =
         WorldId     : uint16
     }
 
+    static member CalculateUniqueId (y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
+        sprintf "%i:%i" y.OrderId y.TimeStamp
+
     static member CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
         {
+            Id         = FableMarketOrder.CalculateUniqueId(y)
             OrderId    = y.OrderId
             RetainerId = y.RetainerId
             UserId     = y.UserId

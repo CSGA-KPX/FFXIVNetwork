@@ -5,8 +5,8 @@ open LiteDB.FSharp.Extensions
 
 /// 市场快照
 /// 用于查询价格
-let dbSnapshot = Database.db.GetCollection<MarketSnapshot>()
-let dbHistory  = Database.db.GetCollection<LibDmfXiv.Shared.MarketOrder.FableMarketOrder>()
+let private dbSnapshot = Database.db.GetCollection<MarketSnapshot>()
+let private dbHistory  = Database.db.GetCollection<LibDmfXiv.Shared.MarketOrder.FableMarketOrder>()
 
 let marketOrderApi : IMarkerOrder = 
     {
@@ -19,7 +19,10 @@ let marketOrderApi : IMarkerOrder =
             dbSnapshot.Upsert(snap) |> ignore
 
             orders
-            |> Array.iter (fun x -> dbHistory.Upsert(x) |> ignore)
+            |> Array.iter (fun x -> 
+                if not <| dbSnapshot.Exists(LiteDB.Query.EQ("_id", new LiteDB.BsonValue(x.Id))) then
+                    dbHistory.Insert(x) |> ignore
+            )
 
             return ()
         }
@@ -41,5 +44,5 @@ let marketOrderApi : IMarkerOrder =
 do
     dbSnapshot.EnsureIndex((fun x -> x.ItemId), false) |> ignore
 
-    dbHistory.EnsureIndex((fun x -> x.OrderId), "STRING($.OrderId)+':'+STRING($.TimeStamp)",  true) |> ignore
+    dbHistory.EnsureIndex((fun x -> x.TimeStamp), "STRING($._id)+':'+STRING($.TimeStamp)",  true) |> ignore
     

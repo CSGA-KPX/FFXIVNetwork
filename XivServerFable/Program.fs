@@ -46,16 +46,5 @@ let main argv =
         .Build()
         .Run()
 
-    if Type.GetType("Mono.Runtime") <> null then
-        UnixSignal.WaitAny(
-            [|
-                new UnixSignal(Signum.SIGINT)
-                new UnixSignal(Signum.SIGTERM)
-                new UnixSignal(Signum.SIGQUIT)
-                new UnixSignal(Signum.SIGHUP)
-            |]) |> ignore
-    else
-        Console.ReadLine() |> ignore
-
     Console.WriteLine("Stopping Fable.Remoting");
     0 // return an integer exit code

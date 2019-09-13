@@ -142,7 +142,7 @@ type MainForm () as this =
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
-                        (offert.ToString("%d天%hh时%mm分%ss秒前"))
+                        (offert.ToString("%d\天%hh\时%mm\分%s\秒\前"))
                 | Utils.DisplayOP.Result (name, item, res, count) when res.Orders.Length = 0 ->
                     addList
                         name
