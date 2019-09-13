@@ -7,3 +7,5 @@ let dbpath =
         "ffxivserver.db"
 
 let db = new LiteDB.LiteDatabase(dbpath)
+
+

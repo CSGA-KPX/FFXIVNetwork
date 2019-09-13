@@ -1,10 +1,10 @@
-﻿namespace LibXIVServer.Fable.MarketOrder
+﻿namespace LibXIVServer.Shared.MarketOrder
+open System
 
 [<CLIMutable>]
 type FableMarketOrder = 
     {
-        OrderId     : uint32
-        Unknown1    : uint32
+        OrderId     : uint64
         RetainerId  : string
         UserId      : string
         SignUserId  : string
@@ -25,37 +25,42 @@ type FableMarketOrder =
         WorldId     : uint16
     }
 
-    static member Empty = 
+    member x.CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
         {
-            OrderId     = 0u
-            Unknown1    = 0u
-            RetainerId  = ""
-            UserId      = ""
-            SignUserId  = ""
-            Price       = 0u
-            Unknown2    = 0u
-            Count       = 0u
-            ItemId      = 0u
-            TimeStamp   = 0u
-            Unknown3    = [| |]
-            Name        = ""
-            IsHQ        = false
-            MeldCount   = 0uy
-            Market      = 0uy
-            Unknown4    = 0uy
-            Unknown5    = [| |]
-            Unknown6    = [| |]
-
-            WorldId     = 0us
+            OrderId    = y.OrderId
+            RetainerId = y.RetainerId
+            UserId     = y.UserId
+            SignUserId = y.SignUserId
+            Price      = y.Price
+            Unknown2   = y.Unknown2
+            Count      = y.Count
+            ItemId     = y.ItemId
+            TimeStamp  = y.TimeStamp
+            Unknown3   = y.Unknown3
+            Name       = y.Name
+            IsHQ       = y.IsHQ
+            MeldCount  = y.MeldCount
+            Market     = y.Market
+            Unknown4   = y.Unknown4
+            Unknown5   = y.Unknown5
+            Unknown6   = y.Unknown6
+            WorldId    = world
         }
-    member x.CopyPropFrom(obj) = 
-        LibXIVServer.Fable.Utils.PropCopier.Copy(obj, x)
-        x
 
+type MarketSnapshot(i,w)= 
+    member val Id = MarketSnapshot.GetId(i, w) with get, set
+    member val ItemId : uint32 = i with get, set
+    member val WorldId : uint16 = w with get, set
+    member val UpdateTime = DateTimeOffset.UtcNow with get,set
+    member val Orders : FableMarketOrder[] = [||] with get, set
+
+    new () = new MarketSnapshot(0u, 0us)
+
+    static member GetId(i : uint32, w : uint16) = sprintf "%i:%i" i w 
 
 type IMarkerOrder = 
     {
-        PutOrders       : uint16 -> FableMarketOrder[] -> Async<unit>
-        GetByIdWorld    : uint16 -> uint32 -> Async<FableMarketOrder []>
-        GetByIdAllWorld : uint32 -> Async<(uint16 * FableMarketOrder []) []>
+        PutOrders       : uint16 -> uint32 -> FableMarketOrder[] -> Async<unit>
+        GetByIdWorld    : uint16 -> uint32 -> Async<MarketSnapshot>
+        GetByIdAllWorld : uint32 -> Async<MarketSnapshot []>
     }

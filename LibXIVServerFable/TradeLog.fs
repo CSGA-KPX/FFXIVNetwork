@@ -1,8 +1,10 @@
-﻿namespace LibXIVServer.Fable.TradeLog
+﻿namespace LibXIVServer.Shared.TradeLog
+open System
 
 [<CLIMutable>]
 type FableTradeLog = 
     {
+        Id          : string
         ItemId      : uint32
         Price       : uint32
         TimeStamp   : uint32
@@ -14,26 +16,26 @@ type FableTradeLog =
         WorldId     : uint16
     }
 
-    static member Empty = 
+    member x.CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.TradeLog) = 
         {
-            ItemId      = 0u
-            Price       = 0u
-            TimeStamp   = 0u
-            Count       = 0u
-            IsHQ        = false
-            Unknown     = 0u
-            BuyerName   = ""
-
-            WorldId     = 0us
+            Id        = FableTradeLog.CalculateId(world, y.BuyerName, y.TimeStamp)
+            ItemId    = y.ItemId
+            Price     = y.Price
+            TimeStamp = y.TimeStamp
+            Count     = y.Count
+            IsHQ      = y.IsHQ
+            Unknown   = y.Unknown
+            BuyerName = y.BuyerName
+            WorldId   = world
         }
 
-    member x.CopyPropFrom(obj) = 
-        LibXIVServer.Fable.Utils.PropCopier.Copy(obj, x)
-        x
+    // 同一个世界的同一个用户不能在同一个时间买多个物品
+    static member CalculateId (world, name, ts) =
+        sprintf "%i:%i:%s" world ts name
 
 type ITradeLog = 
     {
-        PutTradeLogs        : uint16 -> FableTradeLog [] -> Async<unit>
+        PutTradeLogs        : FableTradeLog [] -> Async<unit>
         GetByIdWorld        : uint16 -> uint32 -> int32 -> Async<FableTradeLog []>
         GetByIdAllWorld     : uint32 -> int32 -> Async<FableTradeLog []>
         GetAllByIdWorld     : uint16 -> uint32 -> Async<FableTradeLog []>

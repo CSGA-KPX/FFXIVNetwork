@@ -1,40 +1,45 @@
 ﻿module MarketOrder
 open System
-open LibXIVServer.Fable.MarketOrder
+open LibXIVServer.Shared.MarketOrder
+open LiteDB.FSharp.Extensions
 
 /// 市场快照
 /// 用于查询价格
-[<CLIMutable>]
-type MarketSnapshot = 
-    {
-        ItemId      : uint32
-        WorldId     : uint16
-        UpdateTime  : DateTimeOffset
-    }
+let dbSnapshot = Database.db.GetCollection<MarketSnapshot>()
+let dbHistory  = Database.db.GetCollection<LibXIVServer.Shared.MarketOrder.FableMarketOrder>()
 
 let marketOrderApi : IMarkerOrder = 
     {
-        PutOrders = fun worldId orders -> async {
+        PutOrders = fun worldId itemId orders -> async {
+            let id = MarketSnapshot.GetId(itemId, worldId)
+            let snap =
+                match dbSnapshot.TryFindById(new LiteDB.BsonValue(id)) with
+                | None -> new MarketSnapshot(itemId, worldId, Orders = orders)
+                | Some(x) -> x
+            dbSnapshot.Upsert(snap) |> ignore
+
+            orders
+            |> Array.iter (fun x -> dbHistory.Upsert(x) |> ignore)
+
             return ()
         }
+
         GetByIdWorld = fun worldId itemId -> async {
-            return [||]
+            let id = MarketSnapshot.GetId(itemId, worldId)
+            let ret = 
+                match dbSnapshot.TryFindById(new LiteDB.BsonValue(id)) with
+                | None -> new MarketSnapshot(itemId, worldId)
+                | Some(x) -> x
+            return ret
         }
 
         GetByIdAllWorld = fun itemId -> async {
-            return 
-                [|
-                    yield 0us, [||]
-                |]
+            return dbSnapshot.findMany <@ fun snap -> snap.ItemId = itemId @> |> Seq.toArray
         }
     }
 
 do
-    let col = Database.db.GetCollection<MarketSnapshot>()
-    col.EnsureIndex(fun x -> sprintf "%i%i" x.ItemId x.WorldId, true) |> ignore
-    col.EnsureIndex(fun x -> x.ItemId, false) |> ignore
-    col.EnsureIndex(fun x -> x.WorldId, false) |> ignore
-    
-    //Unique index
+    dbSnapshot.EnsureIndex((fun x -> x.ItemId), false) |> ignore
 
-    ()
+    dbHistory.EnsureIndex((fun x -> x.OrderId), "STRING($.OrderId)+':'+STRING($.TimeStamp)",  true) |> ignore
+    

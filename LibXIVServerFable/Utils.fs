@@ -1,4 +1,4 @@
-namespace LibXIVServer.Fable.Utils
+namespace LibXIVServer.Shared.Utils
 open System
 open System.Reflection
 

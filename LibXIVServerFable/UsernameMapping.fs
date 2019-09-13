@@ -1,5 +1,6 @@
-﻿namespace LibXIVServer.Fable.UsernameMapping
+﻿namespace LibXIVServer.Shared.UsernameMapping
 
+[<CLIMutable>]
 type FabelUsernameMapping = 
     {
         UserId   : string
@@ -12,14 +13,16 @@ type FabelUsernameMapping =
             UserName = ""
         }
 
-    member x.CopyPropFrom(obj) = 
-        LibXIVServer.Fable.Utils.PropCopier.Copy(obj, x)
-        x
+    member x.CreateFrom(y : LibFFXIV.Network.SpecializedPacket.CharacterNameLookupReply) = 
+        {
+            UserId   = y.UserId
+            UserName = y.UserName
+        }
 
 type IUsernameMapping = 
     {
         PutMapping  : FabelUsernameMapping -> Async<unit>
         PutMappings : FabelUsernameMapping[] -> Async<unit>
-        GetById     : string -> Async<FabelUsernameMapping>
-        GetByName   : string -> Async<FabelUsernameMapping>
+        GetById     : string -> Async<FabelUsernameMapping option>
+        GetByName   : string -> Async<FabelUsernameMapping[]>
     }

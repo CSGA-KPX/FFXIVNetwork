@@ -13,7 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <UseStandardResourceNames>true</UseStandardResourceNames>
     <WarningsAsErrors>3239;$(WarningsAsErrors)</WarningsAsErrors>
-    <Name>XivServerFable</Name>
+    <Name>DmfServerFable</Name>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
@@ -50,6 +50,9 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Database.fs" />
+    <Compile Include="MarketOrder.fs" />
+    <Compile Include="TradeLog.fs" />
+    <Compile Include="UsernameMapping.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
@@ -70,6 +73,9 @@
     </Reference>
     <Reference Include="LiteDB">
       <HintPath>..\packages\LiteDB.4.1.4\lib\net40\LiteDB.dll</HintPath>
+    </Reference>
+    <Reference Include="LiteDB.FSharp">
+      <HintPath>..\packages\LiteDB.FSharp.2.11.0\lib\net461\LiteDB.FSharp.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNetCore.Connections.Abstractions">
       <HintPath>..\packages\Microsoft.AspNetCore.Connections.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Connections.Abstractions.dll</HintPath>
@@ -166,9 +172,6 @@
     </Reference>
     <Reference Include="Microsoft.Win32.Primitives">
       <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Posix.NETStandard">
-      <HintPath>..\packages\Mono.Posix.NETStandard.1.0.0\lib\net40\Mono.Posix.NETStandard.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="Newtonsoft.Json">
@@ -299,8 +302,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LibXIVServerFable\LibXIVServerFable.fsproj">
-      <Name>LibXIVServerFable</Name>
+    <ProjectReference Include="..\LibFFXIV\LibFFXIV.Network.fsproj">
+      <Name>LibFFXIV.Network</Name>
+      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\LibXIVServerFable\LibDmfXivShared.fsproj">
+      <Name>LibDmfXivShared</Name>
       <Project>{f3a0b381-c67e-492b-a5a0-bae614969d49}</Project>
       <Private>True</Private>
     </ProjectReference>
