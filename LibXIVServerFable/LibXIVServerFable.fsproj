@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="MarketOrder.fs" />
+    <Compile Include="TradeLog.fs" />
+    <Compile Include="UsernameMapping.fs" />
+  </ItemGroup>
+
+</Project>

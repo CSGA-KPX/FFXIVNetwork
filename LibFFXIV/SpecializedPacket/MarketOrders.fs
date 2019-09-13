@@ -3,8 +3,7 @@ open LibFFXIV.Network.Utils
 
 type MarketOrder() = 
     inherit PacketParserBase()
-    member val OrderId     : uint32 = 0u with set, get
-    member val Unknown1    : uint32 = 0u with set, get
+    member val OrderId     : uint64 = 0UL with set, get
     member val RetainerId  : string = "" with set, get
     member val UserId      : string = "" with set, get
     //道具制作者签名
@@ -36,8 +35,7 @@ type MarketOrder() =
         then
             Logger.Trace<MarketOrder>(data |> HexString.ToHex)
             let r  = XIVBinaryReader.FromBytes(data)
-            x.OrderId     <- r.ReadUInt32()
-            x.Unknown1    <- r.ReadUInt32()
+            x.OrderId     <- r.ReadUInt64()
             x.RetainerId  <- r.ReadHexString(8)
             x.UserId      <- r.ReadHexString(8)
             x.SignUserId  <- r.ReadHexString(8)

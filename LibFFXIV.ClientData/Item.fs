@@ -35,6 +35,7 @@ let internal idAsKey   = new System.Collections.Generic.Dictionary<int   , ItemR
 
 let LookupByName(name)= nameAsKey.TryGetValue(name) |> Utils.TryGetToOption
 let LookupById(id)    =   idAsKey.TryGetValue(id) |> Utils.TryGetToOption
+let AllItems          = lazy (idAsKey |> Seq.map (fun x -> x.Value) |> Array.ofSeq)
 
 #if COMPILED 
 do

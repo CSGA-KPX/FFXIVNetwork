@@ -95,6 +95,31 @@ let shopitem =
     |]
     |> JsonConvert.SerializeObject
 
+printfn "Extracting client TerritoryType."
+let territoryType = 
+    [|
+        for t in realm.GameData.GetSheet<Xiv.TerritoryType>() do 
+            yield   {
+                LibFFXIV.ClientData.TerritoryType.TerritoryTypeRecord.Name       = t.Name.ToString()
+                LibFFXIV.ClientData.TerritoryType.TerritoryTypeRecord.RegionName = t.RegionPlaceName.Name.ToString()
+                LibFFXIV.ClientData.TerritoryType.TerritoryTypeRecord.ZoneName   = t.ZonePlaceName.Name.ToString()
+                LibFFXIV.ClientData.TerritoryType.TerritoryTypeRecord.PlaceName  = t.PlaceName.Name.ToString()
+                LibFFXIV.ClientData.TerritoryType.TerritoryTypeRecord.TerritoryIntendedUse = t.As<Byte>("TerritoryIntendedUse")
+            }
+    |]
+    |> JsonConvert.SerializeObject
+
+printfn "Extracting client ContentFinderCondition."
+let contentFinderCondition = 
+    [|
+        for t in realm.GameData.GetSheet<Xiv.ContentFinderCondition>() do 
+            yield   {
+                LibFFXIV.ClientData.ContentFinderCondition.ContentFinderConditionRecord.Name       = t.Name.ToString()
+                LibFFXIV.ClientData.ContentFinderCondition.ContentFinderConditionRecord.IsMentor   = t.As<bool>("MentorRoulette")
+                LibFFXIV.ClientData.ContentFinderCondition.ContentFinderConditionRecord.ContentType= t.ContentType.Name.ToString()
+            }
+    |]
+    |> JsonConvert.SerializeObject
 
 let p = new ReaderParameters(ReadSymbols = true, InMemory = true)
 let output = Path.Combine(outputPath,"LibFFXIV.ClientData.dll")
@@ -110,6 +135,8 @@ using (AssemblyDefinition.ReadAssembly(output, p)) (fun assembly ->
     addRes(LibFFXIV.ClientData.Utils.Resource.CompanyCraftSequence, gcs)
     addRes(LibFFXIV.ClientData.Utils.Resource.GilShopItem, shopitem)
     addRes(LibFFXIV.ClientData.Utils.Resource.Recipe, recipe)
+    addRes(LibFFXIV.ClientData.Utils.Resource.TerritoryType, territoryType)
+    addRes(LibFFXIV.ClientData.Utils.Resource.ContentFinderCondition, contentFinderCondition)
 
     printfn "Writing %s" output
     assembly.Write(output, new WriterParameters(WriteSymbols = true))

@@ -59,6 +59,8 @@
     <Compile Include="Item.fs" />
     <Compile Include="Recipe.fs" />
     <Compile Include="GilShopItem.fs" />
+    <Compile Include="TerritoryType.fs" />
+    <Compile Include="ContentFinderCondition.fs" />
     <None Include="App.config" />
     <None Include="Mono.cecil\Mono.Cecil.dll" />
     <None Include="Mono.cecil\Mono.Cecil.Mdb.dll" />

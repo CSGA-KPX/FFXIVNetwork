@@ -15,6 +15,8 @@ type Resource =
     | CompanyCraftSequence
     | GilShopItem
     | TargetVersion
+    | TerritoryType
+    | ContentFinderCondition
         
     member x.ReadText() = 
         let assembly = Assembly.GetExecutingAssembly()
@@ -32,7 +34,9 @@ type Resource =
                 | Recipe -> "Recipe.bin"
                 | CompanyCraftSequence -> "CompanyCraftSequence.bin"
                 | GilShopItem -> "GilShopItem.bin"
-                | TargetVersion -> "TargetVersion.txt")
+                | TargetVersion -> "TargetVersion.txt"
+                | TerritoryType -> "TerritoryType.bin"
+                | ContentFinderCondition -> "ContentFinderCondition.bin" )
 
 let ShowAllResources() = 
     let assembly = Assembly.GetExecutingAssembly()
