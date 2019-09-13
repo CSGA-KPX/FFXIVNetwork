@@ -1,4 +1,4 @@
-﻿namespace LibXIVServer.Shared.UsernameMapping
+﻿namespace LibDmfXiv.Shared.UsernameMapping
 
 [<CLIMutable>]
 type FabelUsernameMapping = 
@@ -13,7 +13,13 @@ type FabelUsernameMapping =
             UserName = ""
         }
 
-    member x.CreateFrom(y : LibFFXIV.Network.SpecializedPacket.CharacterNameLookupReply) = 
+    static member CreateFrom(id, name) = 
+        {
+            UserId   = id
+            UserName = name
+        }
+
+    static member CreateFrom(y : LibFFXIV.Network.SpecializedPacket.CharacterNameLookupReply) = 
         {
             UserId   = y.UserId
             UserName = y.UserName

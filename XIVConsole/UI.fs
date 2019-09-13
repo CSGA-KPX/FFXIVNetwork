@@ -131,18 +131,19 @@ type MainForm () as this =
                 | Utils.DisplayOP.EmptyLine ->
                     addList "" "" "" "" "" ""
                 | Utils.DisplayOP.BeginSum  -> sum <- Utils.StdEv.Zero
-                | Utils.DisplayOP.Result (name, item, res, count) when res.Success ->
-                    let std = Utils.GetStdEv(res.Record.Value, cutOff)
+                | Utils.DisplayOP.Result (name, item, res, count) when res.Orders.Length <> 0->
+                    let std = Utils.GetStdEv(res.Orders, cutOff)
                     let total = (std * count)
                     sum <- sum + total
+                    let offert = DateTimeOffset.UtcNow - res.UpdateTime
                     addList
                         name
                         (item.Name)
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
-                        res.UpdateDate
-                | Utils.DisplayOP.Result (name, item, res, count) when not res.Success ->
+                        (offert.ToString("%d天%hh时%mm分%ss秒前"))
+                | Utils.DisplayOP.Result (name, item, res, count) when res.Orders.Length = 0 ->
                     addList
                         name
                         (item.Name)

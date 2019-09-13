@@ -1,4 +1,4 @@
-namespace LibXIVServer.Shared.Utils
+namespace LibDmfXiv.Shared.Utils
 open System
 open System.Reflection
 

@@ -1,12 +1,17 @@
 ﻿module Utils
 open System
 open LibFFXIV.ClientData
+open LibDmfXiv.Client
 
-let dao = new LibXIVServer.MarketV2.MarketOrderDAO()
+let getOrdersById (itemId) = 
+    async {
+        return! MarketOrder.MarketOrderProxy.call <@ fun server -> server.GetByIdWorld 1042us  itemId @>
+    }
+    |> Async.RunSynchronously
 
 type DisplayOP = 
     | Query  of string * Item.ItemRecord * float
-    | Result of string * Item.ItemRecord * LibXIVServer.Common.Result<LibXIVServer.MarketV2.ServerMarkerOrder []> * float
+    | Result of string * Item.ItemRecord * LibDmfXiv.Shared.MarketOrder.MarketSnapshot * float
     | BeginSum
     | EndSum of string
     | EmptyLine
@@ -15,7 +20,7 @@ type DisplayOP =
     member x.Fetch() = 
         match x with
         | Query (str, item, count) -> 
-            let market = dao.Get(item.Id |> uint32)
+            let market = getOrdersById(item.Id |> uint32)
             Result (str, item, market, count)
         | _ -> x
 
@@ -87,7 +92,7 @@ type StringQuery =
                 yield EmptyLine
             |]
 
-let internal TakeMarketSample (samples : LibXIVServer.MarketV2.ServerMarkerOrder [] , cutPct : int) = 
+let internal TakeMarketSample (samples : LibDmfXiv.Shared.MarketOrder.FableMarketOrder [] , cutPct : int) = 
     [|
         //(price, count)
         let samples = samples |> Array.sortBy (fun x -> x.Price)
@@ -132,7 +137,7 @@ type StdEv =
             Deviation = 0.0
         }
 
-let GetStdEv(market : LibXIVServer.MarketV2.ServerMarkerOrder [] , cutPct : int) = 
+let GetStdEv(market : LibDmfXiv.Shared.MarketOrder.FableMarketOrder [] , cutPct : int) = 
     let samples = TakeMarketSample(market, cutPct)
     let itemCount = samples |> Array.sumBy (fun (a, b) -> (float) b)
     let average = 

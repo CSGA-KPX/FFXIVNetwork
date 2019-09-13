@@ -1,6 +1,6 @@
 ﻿module TradeLog
 open System.Linq
-open LibXIVServer.Shared.TradeLog
+open LibDmfXiv.Shared.TradeLog
 open LiteDB
 open LiteDB.FSharp.Extensions
 

@@ -1,4 +1,4 @@
-﻿namespace LibXIVServer.Shared.TradeLog
+﻿namespace LibDmfXiv.Shared.TradeLog
 open System
 
 [<CLIMutable>]
@@ -16,7 +16,7 @@ type FableTradeLog =
         WorldId     : uint16
     }
 
-    member x.CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.TradeLog) = 
+    static member CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.TradeLog) = 
         {
             Id        = FableTradeLog.CalculateId(world, y.BuyerName, y.TimeStamp)
             ItemId    = y.ItemId

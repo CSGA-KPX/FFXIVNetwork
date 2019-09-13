@@ -5,6 +5,8 @@ open LibFFXIV.Network.Constants
 open LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.SpecializedPacket
 open LibFFXIV.ClientData
+open LibDmfXiv
+open LibDmfXiv.Client
 open System.Collections.Generic
 
 type PlayerSpawnHandler() = 
@@ -21,7 +23,12 @@ type UserIDHandler() =
     inherit PacketHandlerBase()
 
     let cache = new HashSet<string>()
-    let dao   = new LibXIVServer.UsernameMapping.UsernameMappingDAO()
+
+    let putMapping(id, name) = 
+        async {
+            let m = LibDmfXiv.Shared.UsernameMapping.FabelUsernameMapping.CreateFrom(id, name)
+            do! UsernameMapping.MarketOrderProxy.call <@ fun server -> server.PutMapping(m) @>
+        } |> Async.RunSynchronously
 
     [<PacketHandleMethodAttribute(Opcodes.Chat, PacketDirection.In)>]
     member x.HandleChat(gp : FFXIVGamePacket) = 
@@ -30,7 +37,8 @@ type UserIDHandler() =
         x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.UserName, r.UserId, r.ServerId, r.Text)
 
         if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
-            dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
+            
+            putMapping(r.UserId, r.UserName)
             cache.Add(r.UserId) |> ignore
 
     [<PacketHandleMethodAttribute(Opcodes.LinkshellList, PacketDirection.In)>]
@@ -41,7 +49,7 @@ type UserIDHandler() =
         for r in p.Records do 
             x.Logger.Info("{0}({1})@{2}", r.UserName, r.UserId, r.ServerId)
             if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
-                dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
+                putMapping(r.UserId, r.UserName)
                 cache.Add(r.UserId) |> ignore
 
         x.Logger.Info("--LinkshellListHandler Header:{0}--", hex)
@@ -53,12 +61,15 @@ type UserIDHandler() =
         
         //修正：有些奇怪的用户名第一个字节为0x00
         if Utils.RuntimeConfig.CanUploadData() && (not <| String.IsNullOrEmpty(r.UserName)) then
-            dao.Put(LibXIVServer.UsernameMapping.UserInfo.From(r.UserId, r.UserName))
+            putMapping(r.UserId, r.UserName)
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
 
-    let dao = new LibXIVServer.TradeLogV2.TradeLogDAO()
+    let putTradelog (logs) = 
+        async {
+            do! TradeLog.MarketOrderProxy.call <@ fun server -> server.PutTradeLogs(logs) @>
+        } |> Async.RunSynchronously
 
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData, PacketDirection.In)>]
     member x.HandleData (gp : FFXIVGamePacket) = 
@@ -82,18 +93,20 @@ type TradeLogPacketHandler() =
 
         if Utils.RuntimeConfig.CanUploadData() && Utils.RuntimeConfig.IsWorldReady() then
             let itemId = tradeLogs.ItemID
-            let sl = 
+            let logs = 
                 tradeLogs.Records
-                |> Array.map (fun x -> 
-                    let l = new LibXIVServer.TradeLogV2.ServerTradeLog(Utils.RuntimeConfig.CurrentWorld)
-                    l.DoPropCopy(x))
-            dao.Put(itemId, sl)
+                |> Array.map (fun x -> Shared.TradeLog.FableTradeLog.CreateFrom(Utils.RuntimeConfig.CurrentWorld, x))
+            putTradelog(logs)
 
 type MarketPacketHandler ()= 
     inherit PacketHandlerBase()
 
     let arr = LibFFXIV.Network.Utils.XIVArray<MarketOrder>()
-    let dao = LibXIVServer.MarketV2.MarketOrderDAO()
+
+    let putOrders (w, i, orders) = 
+        async {
+            do! MarketOrder.MarketOrderProxy.call <@ fun server -> server.PutOrders w i orders @>
+        } |> Async.RunSynchronously
 
     member x.LogMarketData (mr : MarketOrder []) = 
         sb {
@@ -114,19 +127,14 @@ type MarketPacketHandler ()=
             yield "====MarketDataEnd===="
         } |> buildString |> x.Logger.Info
 
-    member x.LogMarketRecords (mr : MarketOrder []) = 
-        for m in mr do 
-            () //x.Logger.Trace(m.ToString())
-
     member x.UploadMarketData (mr : MarketOrder []) = 
         NLog.LogManager.GetCurrentClassLogger().Info("正在提交市场数据")
+        let itemId = mr.[0].ItemId
+        let worldId= Utils.RuntimeConfig.CurrentWorld
         let sr = 
             mr 
-            |> Array.map (fun x -> 
-                let o = new LibXIVServer.MarketV2.ServerMarkerOrder(Utils.RuntimeConfig.CurrentWorld)
-                o.DoPropCopy(x))
-        let itemId = mr.[0].ItemId
-        dao.Put(itemId, sr)
+            |> Array.map (fun x -> Shared.MarketOrder.FableMarketOrder.CreateFrom(worldId, x))
+        putOrders(worldId, itemId, sr)
 
     [<PacketHandleMethodAttribute(Opcodes.Market, PacketDirection.In)>]
     member x.HandleMarketOrderFragment(gp : FFXIVGamePacket) = 
@@ -141,7 +149,6 @@ type MarketPacketHandler ()=
         if arr.IsCompleted then
             let data = arr.Data
             x.LogMarketData(data)
-            x.LogMarketRecords(data)
             if Utils.RuntimeConfig.CanUploadData() && Utils.RuntimeConfig.IsWorldReady() then
                 x.UploadMarketData(data)
             arr.Reset()

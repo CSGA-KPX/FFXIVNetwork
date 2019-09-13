@@ -1,6 +1,6 @@
 ﻿module UsernameMapping
 open System
-open LibXIVServer.Shared.UsernameMapping
+open LibDmfXiv.Shared.UsernameMapping
 open LiteDB.FSharp.Extensions
 
 let mappingDb = Database.db.GetCollection<FabelUsernameMapping>()

@@ -2,19 +2,19 @@
 open Fable.Remoting.DotnetClient
 
 module MarketOrder = 
-    open LibXIVServer.Shared.MarketOrder
+    open LibDmfXiv.Shared.MarketOrder
 
     let MarketOrderProxy = 
         Proxy.create<IMarkerOrder> Utils.route
         
 module TradeLog = 
-    open LibXIVServer.Shared.TradeLog
+    open LibDmfXiv.Shared.TradeLog
 
     let MarketOrderProxy = 
         Proxy.create<ITradeLog> Utils.route
         
 module UsernameMapping = 
-    open LibXIVServer.Shared.UsernameMapping
+    open LibDmfXiv.Shared.UsernameMapping
 
     let MarketOrderProxy = 
         Proxy.create<IUsernameMapping> Utils.route

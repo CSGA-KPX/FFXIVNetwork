@@ -1,12 +1,12 @@
 ﻿module MarketOrder
 open System
-open LibXIVServer.Shared.MarketOrder
+open LibDmfXiv.Shared.MarketOrder
 open LiteDB.FSharp.Extensions
 
 /// 市场快照
 /// 用于查询价格
 let dbSnapshot = Database.db.GetCollection<MarketSnapshot>()
-let dbHistory  = Database.db.GetCollection<LibXIVServer.Shared.MarketOrder.FableMarketOrder>()
+let dbHistory  = Database.db.GetCollection<LibDmfXiv.Shared.MarketOrder.FableMarketOrder>()
 
 let marketOrderApi : IMarkerOrder = 
     {

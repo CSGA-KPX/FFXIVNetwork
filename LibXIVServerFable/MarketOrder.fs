@@ -1,4 +1,4 @@
-﻿namespace LibXIVServer.Shared.MarketOrder
+﻿namespace LibDmfXiv.Shared.MarketOrder
 open System
 
 [<CLIMutable>]
@@ -25,7 +25,7 @@ type FableMarketOrder =
         WorldId     : uint16
     }
 
-    member x.CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
+    static member CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
         {
             OrderId    = y.OrderId
             RetainerId = y.RetainerId

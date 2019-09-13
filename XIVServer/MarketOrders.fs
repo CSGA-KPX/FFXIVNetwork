@@ -96,7 +96,7 @@ type DBOrdersSnapshot =
 type DBMarketRecordOrderIDUpdate =
     {
         [<PrimaryKeyAttribute>]
-        OrderID     : uint32
+        OrderID     : uint64
         Price       : uint32
         ///UTC time
         LastAccessTime : System.DateTime

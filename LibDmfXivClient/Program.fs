@@ -1,4 +1,5 @@
-﻿open System
+﻿module Test
+open System
 
 
 [<EntryPoint>]
