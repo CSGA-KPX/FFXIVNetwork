@@ -1,4 +1,4 @@
-namespace LibFFXIV.Network.SpecializedPacket
+﻿namespace LibFFXIV.Network.SpecializedPacket
 open Microsoft.FSharp.Core.Operators.Checked
 open System
 open System.IO

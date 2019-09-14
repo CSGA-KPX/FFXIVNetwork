@@ -1,4 +1,4 @@
-namespace LibFFXIV.Network.BasePacket
+ï»¿namespace LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.Utils
 open LibFFXIV.Network.Constants
 
@@ -24,7 +24,7 @@ type FFXIVSubPacket =
             Unknown  = r.ReadUInt16()
             Data     = 
                 if (r.BytesLeft |> int) <> ((size|>int)-headerSize) then
-                    Logger.Fatal<FFXIVSubPacket>("SubPacketÎ´½áÊø, Data={0}", b.ToString())
+                    Logger.Fatal<FFXIVSubPacket>("SubPacketæœªç»“æŸ, Data={0}", b.ToString())
                 r
         }
 

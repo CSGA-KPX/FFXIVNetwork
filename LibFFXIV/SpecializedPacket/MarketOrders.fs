@@ -1,4 +1,4 @@
-namespace LibFFXIV.Network.SpecializedPacket
+ï»¿namespace LibFFXIV.Network.SpecializedPacket
 open LibFFXIV.Network.Utils
 
 type MarketOrder() = 
@@ -6,17 +6,17 @@ type MarketOrder() =
     member val OrderId     : uint64 = 0UL with set, get
     member val RetainerId  : string = "" with set, get
     member val UserId      : string = "" with set, get
-    //µÀ¾ßÖÆ×÷ÕßÇ©Ãû
+    //é“å…·åˆ¶ä½œè€…ç­¾å
     member val SignUserId  : string = "" with set, get
     member val Price       : uint32 = 0u with set, get
     member val Unknown2    : uint32 = 0u with set, get
     member val Count       : uint32 = 0u with set, get
     member val ItemId      : uint32 = 0u with set, get
-    ///×îºó·ÃÎÊ¹ÍÔ±µÄÈÕÆÚ
+    ///æœ€åè®¿é—®é›‡å‘˜çš„æ—¥æœŸ
     member val TimeStamp   : uint32 = 0u with set, get
     //24 byte unknown
     member val Unknown3    : byte []= [||] with set, get
-    //32 byte zero-ter UTF8¹ÍÔ±Ãû³Æ
+    //32 byte zero-ter UTF8é›‡å‘˜åç§°
     member val Name        : string = "" with set, get
     // 1 byte
     member val IsHQ        : bool   = false with set, get
@@ -89,15 +89,15 @@ type MarketRecord =
         Unknown1    : uint32
         RetainerID  : uint64
         UserID      : uint64
-        SignUserID  : uint64 //µÀ¾ßÖÆ×÷ÕßÇ©Ãû
+        SignUserID  : uint64 //é“å…·åˆ¶ä½œè€…ç­¾å
         Price       : uint32
         Unknown2    : uint32
         Count       : uint32
         Itemid      : uint32
-        ///×îºó·ÃÎÊ¹ÍÔ±µÄÈÕÆÚ
+        ///æœ€åè®¿é—®é›‡å‘˜çš„æ—¥æœŸ
         TimeStamp   : uint32
         Unknown3    : byte [] //24 byte unknown
-        Name        : string  //32 byte zero-ter UTF8¹ÍÔ±Ãû³Æ
+        Name        : string  //32 byte zero-ter UTF8é›‡å‘˜åç§°
         IsHQ        : bool    // 1 byte
         MeldCount   : byte    // 1 byte
         Market      : byte    // 1 byte

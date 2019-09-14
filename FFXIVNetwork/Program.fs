@@ -38,22 +38,29 @@ let main argv =
             let info = new Machina.ProcessTCPInfo()
             while (not gameVerChecked) do 
                 let pid = info.GetProcessIDByWindowName(Utils.WindowName) |> int
-                let path = Utils.ProcessCheck.GetMainModuleFileName(Process.GetProcessById(pid))
-                if path.IsSome then
-                    logger.Info("找到游戏进程{0}，准备校验版本", pid)
-                    let path = IO.Path.Combine(IO.Path.GetDirectoryName(path.Value), "ffxivgame.ver")
-                    let ver = IO.File.ReadAllText(path)
-                    if ver = LibFFXIV.ClientData.TargetVersion.Version then
-                        logger.Info("版本校验通过，启用数据上传")
-                        Utils.RuntimeConfig.VersionCheckPassed <- true
-                    else
-                        logger.Error("版本校验失败，本地版本为{0}，定义版本为{1}", ver, LibFFXIV.ClientData.TargetVersion.Version)
-                    gameVerChecked <- true
+                if pid <> 0 then
+                    let path = Utils.ProcessCheck.GetMainModuleFileName(Process.GetProcessById(pid))
+                    if path.IsSome then
+                        logger.Info("找到游戏进程{0}，准备校验版本", pid)
+                        let path = IO.Path.Combine(IO.Path.GetDirectoryName(path.Value), "ffxivgame.ver")
+                        let ver = IO.File.ReadAllText(path)
+                        if ver = LibFFXIV.ClientData.TargetVersion.Version then
+                            logger.Info("版本校验通过，启用数据上传")
+                            Utils.RuntimeConfig.VersionCheckPassed <- true
+                        else
+                            logger.Error("版本校验失败，本地版本为{0}，定义版本为{1}", ver, LibFFXIV.ClientData.TargetVersion.Version)
+                        gameVerChecked <- true
+                else
+                    logger.Info("没有找到游戏进程")
+                    Threading.Thread.Sleep(5000)
         with
-        | e -> logger.Error(e, "读取游戏版本失败，禁用数据上传\r\n")
+        | e -> logger.Error("读取游戏版本失败，禁用数据上传\r\n" + e.ToString())
     with
     | e -> logger.Error(e, "启动失败")
     while true do 
-        Console.ReadLine() |> ignore
+        let line = Console.ReadLine()
+        if line = "1042" then
+            Utils.RuntimeConfig.CurrentWorld <- 1042us
+
     0
     

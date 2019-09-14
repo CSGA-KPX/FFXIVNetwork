@@ -1,4 +1,4 @@
-namespace LibFFXIV.Network.BasePacket
+﻿namespace LibFFXIV.Network.BasePacket
 open LibFFXIV.Network.Utils
 open LibFFXIV.Network.Constants
 

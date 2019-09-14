@@ -16,6 +16,12 @@ type FableTradeLog =
         WorldId     : uint16
     }
 
+    member x.ToDateTimeOffset() = 
+        DateTimeOffset.FromUnixTimeSeconds(x.TimeStamp |> int64)
+
+    member x.HumanReadableTimeSpan =
+        (DateTimeOffset.UtcNow -  x.ToDateTimeOffset())  |>LibDmfXiv.Shared.Utils.formatTimeSpan
+
     static member CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.TradeLog) = 
         {
             Id        = FableTradeLog.CalculateId(world, y.BuyerName, y.TimeStamp)

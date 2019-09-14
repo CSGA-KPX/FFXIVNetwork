@@ -17,11 +17,11 @@ let usernameMappingApi : IUsernameMapping =
         }
 
         GetById = fun id -> async {
-            return mappingDb.TryFindById(new LiteDB.BsonValue(id))
+            return mappingDb.TryFindById(Database.Utils.ToDocument(id))
         }
         
         GetByName = fun name -> async {
-            let query = LiteDB.Query.EQ("UserName", new LiteDB.BsonValue(name))
+            let query = LiteDB.Query.EQ("UserName", Database.Utils.ToDocument(name))
             return mappingDb.Find(query) |> Seq.toArray
         }
 

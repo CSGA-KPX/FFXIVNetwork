@@ -14,28 +14,28 @@ let TradeLogApi : ITradeLog =
         }
 
         GetByIdWorld = fun worldId itemId count -> async {
-            let itemQuery = Query.EQ("ItemId", new BsonValue(itemId))
-            let worldQuery= Query.EQ("WorldId", new BsonValue(worldId))
+            let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
+            let worldQuery= Query.EQ("WorldId", Database.Utils.ToDocument(worldId))
             let query = Query.And(itemQuery, worldQuery)
             
             return tradelogDb.Find(query, limit = count) |> Seq.toArray
         }
         GetByIdAllWorld = fun itemId count -> async {
-            let itemQuery = Query.EQ("ItemId", new BsonValue(itemId))
+            let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
 
             return tradelogDb.Find(itemQuery, limit = count) |> Seq.toArray
         }
         
         GetAllByIdWorld = fun worldId itemId -> async {
-            let itemQuery = Query.EQ("ItemId", new BsonValue(itemId))
-            let worldQuery= Query.EQ("WorldId", new BsonValue(worldId))
+            let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
+            let worldQuery= Query.EQ("WorldId", Database.Utils.ToDocument(worldId))
             let query = Query.And(itemQuery, worldQuery)
             
             return tradelogDb.Find(query) |> Seq.toArray
         }
         
         GetAllByIdAllWorld = fun itemId  -> async {
-            let itemQuery = Query.EQ("ItemId", new BsonValue(itemId))
+            let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
 
             return tradelogDb.Find(itemQuery) |> Seq.toArray
         }

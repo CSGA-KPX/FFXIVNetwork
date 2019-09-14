@@ -135,14 +135,14 @@ type MainForm () as this =
                     let std = Utils.GetStdEv(res.Orders, cutOff)
                     let total = (std * count)
                     sum <- sum + total
-                    let offert = DateTimeOffset.UtcNow - res.UpdateTime
+                    let offert = res.HumanReadableTimeSpan
                     addList
                         name
                         (item.Name)
                         (std.ToString())
                         (String.Format("{0:0.###}", count))
                         (total.ToString())
-                        (offert.ToString("%d\天%hh\时%mm\分%s\秒\前"))
+                        (offert)
                 | Utils.DisplayOP.Result (name, item, res, count) when res.Orders.Length = 0 ->
                     addList
                         name

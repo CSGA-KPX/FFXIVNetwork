@@ -68,7 +68,7 @@ type TradeLogPacketHandler() =
 
     let putTradelog (logs) = 
         async {
-            do! TradeLog.MarketOrderProxy.call <@ fun server -> server.PutTradeLogs(logs) @>
+            do! TradeLog.TradelogProxy.call <@ fun server -> server.PutTradeLogs(logs) @>
         } |> Async.RunSynchronously
 
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData, PacketDirection.In)>]

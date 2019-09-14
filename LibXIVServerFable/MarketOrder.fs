@@ -25,7 +25,7 @@ type FableMarketOrder =
 
         WorldId     : uint16
     }
-
+    
     static member CalculateUniqueId (y : LibFFXIV.Network.SpecializedPacket.MarketOrder) = 
         sprintf "%i:%i" y.OrderId y.TimeStamp
 
@@ -61,7 +61,12 @@ type MarketSnapshot(i,w)=
 
     new () = new MarketSnapshot(0u, 0us)
 
+    member x.HumanReadableTimeSpan =
+        (DateTimeOffset.UtcNow -  x.UpdateTime) |>LibDmfXiv.Shared.Utils.formatTimeSpan
+
     static member GetId(i : uint32, w : uint16) = sprintf "%i:%i" i w 
+
+
 
 type IMarkerOrder = 
     {

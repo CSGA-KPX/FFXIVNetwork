@@ -10,7 +10,7 @@ module MarketOrder =
 module TradeLog = 
     open LibDmfXiv.Shared.TradeLog
 
-    let MarketOrderProxy = 
+    let TradelogProxy = 
         Proxy.create<ITradeLog> Utils.route
         
 module UsernameMapping = 
