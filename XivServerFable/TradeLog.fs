@@ -23,7 +23,8 @@ let TradeLogApi : ITradeLog =
         GetByIdAllWorld = fun itemId count -> async {
             let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
 
-            return tradelogDb.Find(itemQuery, limit = count) |> Seq.toArray
+            // 每个物品每个服务器是20条记录，* 代表最多10个服务器
+            return tradelogDb.Find(itemQuery, limit = count * 10) |> Seq.toArray
         }
         
         GetAllByIdWorld = fun worldId itemId -> async {

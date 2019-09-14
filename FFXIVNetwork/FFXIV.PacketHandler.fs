@@ -27,7 +27,12 @@ type UserIDHandler() =
     let putMapping(id, name) = 
         async {
             let m = LibDmfXiv.Shared.UsernameMapping.FabelUsernameMapping.CreateFrom(id, name)
-            do! UsernameMapping.MarketOrderProxy.call <@ fun server -> server.PutMapping(m) @>
+            let! ret = UsernameMapping.MarketOrderProxy.callSafely <@ fun server -> server.PutMapping(m) @>
+            match ret with
+            | Ok _ ->
+                return "用户名请求 成功"
+            | Error err ->
+                return sprintf  "用户名请求 失败：%A" err
         } |> Async.RunSynchronously
 
     [<PacketHandleMethodAttribute(Opcodes.Chat, PacketDirection.In)>]
@@ -38,7 +43,7 @@ type UserIDHandler() =
 
         if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
             
-            putMapping(r.UserId, r.UserName)
+            putMapping(r.UserId, r.UserName) |> x.Logger.Info
             cache.Add(r.UserId) |> ignore
 
     [<PacketHandleMethodAttribute(Opcodes.LinkshellList, PacketDirection.In)>]
@@ -49,7 +54,7 @@ type UserIDHandler() =
         for r in p.Records do 
             x.Logger.Info("{0}({1})@{2}", r.UserName, r.UserId, r.ServerId)
             if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
-                putMapping(r.UserId, r.UserName)
+                putMapping(r.UserId, r.UserName)  |> x.Logger.Info
                 cache.Add(r.UserId) |> ignore
 
         x.Logger.Info("--LinkshellListHandler Header:{0}--", hex)
@@ -61,14 +66,19 @@ type UserIDHandler() =
         
         //修正：有些奇怪的用户名第一个字节为0x00
         if Utils.RuntimeConfig.CanUploadData() && (not <| String.IsNullOrEmpty(r.UserName)) then
-            putMapping(r.UserId, r.UserName)
+            putMapping(r.UserId, r.UserName)  |> x.Logger.Info
 
 type TradeLogPacketHandler() = 
     inherit PacketHandlerBase()
 
     let putTradelog (logs) = 
         async {
-            do! TradeLog.TradelogProxy.call <@ fun server -> server.PutTradeLogs(logs) @>
+            let! ret = TradeLog.TradelogProxy.callSafely <@ fun server -> server.PutTradeLogs(logs) @>
+            match ret with
+            | Ok _ ->
+                return "提交交易记录 成功"
+            | Error err ->
+                return sprintf  "提交交易记录 失败：%A" err
         } |> Async.RunSynchronously
 
     [<PacketHandleMethodAttribute(Opcodes.TradeLogData, PacketDirection.In)>]
@@ -96,7 +106,7 @@ type TradeLogPacketHandler() =
             let logs = 
                 tradeLogs.Records
                 |> Array.map (fun x -> Shared.TradeLog.FableTradeLog.CreateFrom(Utils.RuntimeConfig.CurrentWorld, x))
-            putTradelog(logs)
+            putTradelog(logs)  |> x.Logger.Info
 
 type MarketPacketHandler ()= 
     inherit PacketHandlerBase()
@@ -105,7 +115,12 @@ type MarketPacketHandler ()=
 
     let putOrders (w, i, orders) = 
         async {
-            do! MarketOrder.MarketOrderProxy.call <@ fun server -> server.PutOrders w i orders @>
+            let! ret = MarketOrder.MarketOrderProxy.callSafely <@ fun server -> server.PutOrders w i orders @>
+            match ret with
+            | Ok _ ->
+                return "提交订单 成功"
+            | Error err ->
+                return sprintf  "提交订单 失败：%A" err
         } |> Async.RunSynchronously
 
     member x.LogMarketData (mr : MarketOrder []) = 
@@ -134,7 +149,7 @@ type MarketPacketHandler ()=
         let sr = 
             mr 
             |> Array.map (fun x -> Shared.MarketOrder.FableMarketOrder.CreateFrom(worldId, x))
-        putOrders(worldId, itemId, sr)
+        putOrders(worldId, itemId, sr)  |> x.Logger.Info
 
     [<PacketHandleMethodAttribute(Opcodes.Market, PacketDirection.In)>]
     member x.HandleMarketOrderFragment(gp : FFXIVGamePacket) = 

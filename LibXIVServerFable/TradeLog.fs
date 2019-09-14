@@ -19,7 +19,7 @@ type FableTradeLog =
     member x.ToDateTimeOffset() = 
         DateTimeOffset.FromUnixTimeSeconds(x.TimeStamp |> int64)
 
-    member x.HumanReadableTimeSpan =
+    member x.GetHumanReadableTimeSpan() =
         (DateTimeOffset.UtcNow -  x.ToDateTimeOffset())  |>LibDmfXiv.Shared.Utils.formatTimeSpan
 
     static member CreateFrom(world, y : LibFFXIV.Network.SpecializedPacket.TradeLog) = 

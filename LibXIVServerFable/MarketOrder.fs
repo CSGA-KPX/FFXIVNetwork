@@ -61,7 +61,7 @@ type MarketSnapshot(i,w)=
 
     new () = new MarketSnapshot(0u, 0us)
 
-    member x.HumanReadableTimeSpan =
+    member x.GetHumanReadableTimeSpan() =
         (DateTimeOffset.UtcNow -  x.UpdateTime) |>LibDmfXiv.Shared.Utils.formatTimeSpan
 
     static member GetId(i : uint32, w : uint16) = sprintf "%i:%i" i w 

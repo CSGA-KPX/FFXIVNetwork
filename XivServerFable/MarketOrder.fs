@@ -20,8 +20,14 @@ let marketOrderApi : IMarkerOrder =
 
             orders
             |> Array.iter (fun x -> 
-                if not <| dbSnapshot.Exists(LiteDB.Query.EQ("_id", Database.Utils.ToDocument(x.Id))) then
-                    dbHistory.Insert(x) |> ignore
+                dbHistory.Upsert(x) |> ignore
+                //printfn "finding %s" x.Id
+                //let id = x.Id
+                //let query = LiteDB.Query.EQ("_id", Database.Utils.ToDocument(id))
+                //let exists = dbSnapshot.Exists(query)
+                //printfn "%s _id exists? %b" x.Id exists
+                //if not exists then
+                //    dbHistory.Insert(x) |> ignore
             )
 
             return ()
@@ -37,12 +43,14 @@ let marketOrderApi : IMarkerOrder =
         }
 
         GetByIdAllWorld = fun itemId -> async {
-            return dbSnapshot.findMany <@ fun snap -> snap.ItemId = itemId @> |> Seq.toArray
+            let query = LiteDB.Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
+            return dbSnapshot.Find(query) |> Seq.toArray
         }
     }
 
 do
     dbSnapshot.EnsureIndex((fun x -> x.ItemId), false) |> ignore
 
+    dbHistory.EnsureIndex((fun x -> x.Id), true) |> ignore
     dbHistory.EnsureIndex((fun x -> x.TimeStamp), "STRING($._id)+':'+STRING($.TimeStamp)",  true) |> ignore
     

@@ -18,7 +18,7 @@ let main argv =
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
         let monitor = new Utils.FFXIVNetworkMonitorChs()
 
-        monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.WinPCap
+        monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.RawSocket
 
         let sent = 
             fun (id : string) (epoch : int64) (data : byte[]) ->

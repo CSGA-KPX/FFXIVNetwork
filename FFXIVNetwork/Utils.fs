@@ -55,27 +55,6 @@ module RuntimeConfig =
     let IsWorldReady() = 
         CurrentWorld <> 0us
 
-module UAC = 
-    open System.Diagnostics
-    open System.Security.Principal
-
-    let IsAdministrator() = 
-        let identity = WindowsIdentity.GetCurrent()
-        let principal = new WindowsPrincipal(identity)
-        principal.IsInRole(WindowsBuiltInRole.Administrator)
-
-    let rec RestartWithUAC() = 
-        let exeFile = Process.GetCurrentProcess().MainModule.FileName
-        let psi = new ProcessStartInfo(exeFile)
-        psi.UseShellExecute <- true
-        psi.WorkingDirectory <- Environment.CurrentDirectory
-        psi.Verb <- "runas"
-        try
-            Process.Start(psi) |> ignore
-        with
-        | _ -> RestartWithUAC()
-        Environment.Exit(0)
-
 module ProcessCheck = 
     open System.Text
     open System.Diagnostics
