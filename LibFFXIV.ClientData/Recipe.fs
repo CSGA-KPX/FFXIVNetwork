@@ -94,12 +94,24 @@ type RecipeManager private () =
 
     static member GetInstance() = instance
 
-    ///获取物品直接材料
+    /// 生产一个流程的材料
     member x.GetMaterials(item : ItemRecord) =
         let recipe = (x :> IRecipeProvider).TryGetRecipe(item)
         [|
             if recipe.IsSome then
                 yield! recipe.Value.Materials
+        |]
+
+    /// 生产一个成品的材料
+    member x.GetMaterialsOne(item : ItemRecord) =
+        let recipe = (x :> IRecipeProvider).TryGetRecipe(item)
+        [|
+            if recipe.IsSome then
+                let recipeYield = recipe.Value.ProductCount
+                let final = 
+                    recipe.Value.Materials
+                    |> Array.map (fun (item, count) -> (item, count / recipeYield))
+                yield! final
         |]
 
     ///获取物品基本材料

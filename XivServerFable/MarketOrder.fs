@@ -11,23 +11,12 @@ let private dbHistory  = Database.db.GetCollection<LibDmfXiv.Shared.MarketOrder.
 let marketOrderApi : IMarkerOrder = 
     {
         PutOrders = fun worldId itemId orders -> async {
-            let id = MarketSnapshot.GetId(itemId, worldId)
-            let snap =
-                match dbSnapshot.TryFindById(Database.Utils.ToDocument(id)) with
-                | None -> new MarketSnapshot(itemId, worldId, Orders = orders)
-                | Some(x) -> x
-            dbSnapshot.Upsert(snap) |> ignore
+            let current = new MarketSnapshot(itemId, worldId, Orders = orders)
+            dbSnapshot.Upsert(current) |> ignore
 
             orders
             |> Array.iter (fun x -> 
                 dbHistory.Upsert(x) |> ignore
-                //printfn "finding %s" x.Id
-                //let id = x.Id
-                //let query = LiteDB.Query.EQ("_id", Database.Utils.ToDocument(id))
-                //let exists = dbSnapshot.Exists(query)
-                //printfn "%s _id exists? %b" x.Id exists
-                //if not exists then
-                //    dbHistory.Insert(x) |> ignore
             )
 
             return ()
