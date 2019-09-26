@@ -18,27 +18,45 @@ let TradeLogApi : ITradeLog =
             let worldQuery= Query.EQ("WorldId", Database.Utils.ToDocument(worldId))
             let query = Query.And(itemQuery, worldQuery)
             
-            return tradelogDb.Find(query, limit = count) |> Seq.toArray
+            let ret = 
+                tradelogDb.Find(query)
+                            .OrderByDescending(fun x -> x.TimeStamp)
+                            .Take(count)
+                            .ToArray()
+            return ret
         }
         GetByIdAllWorld = fun itemId count -> async {
             let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
 
             // 每个物品每个服务器是20条记录，* 代表最多10个服务器
-            return tradelogDb.Find(itemQuery, limit = count * 10) |> Seq.toArray
+            let ret = 
+                tradelogDb.Find(itemQuery)
+                            .OrderByDescending(fun x -> x.TimeStamp)
+                            .Take(count * 10)
+                            .ToArray()
+            return ret
         }
         
         GetAllByIdWorld = fun worldId itemId -> async {
             let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
             let worldQuery= Query.EQ("WorldId", Database.Utils.ToDocument(worldId))
             let query = Query.And(itemQuery, worldQuery)
-            
-            return tradelogDb.Find(query) |> Seq.toArray
+
+            let ret = 
+                tradelogDb.Find(query)
+                            .OrderByDescending(fun x -> x.TimeStamp)
+                            .ToArray()
+            return ret
         }
         
         GetAllByIdAllWorld = fun itemId  -> async {
             let itemQuery = Query.EQ("ItemId", Database.Utils.ToDocument(itemId))
 
-            return tradelogDb.Find(itemQuery) |> Seq.toArray
+            let ret = 
+                tradelogDb.Find(itemQuery)
+                            .OrderByDescending(fun x -> x.TimeStamp)
+                            .ToArray()
+            return ret
         }
     }
 

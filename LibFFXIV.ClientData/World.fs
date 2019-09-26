@@ -26,6 +26,7 @@ let Worlds =
         1172us, "白银乡"
         1171us, "神拳痕"
         1170us, "潮风亭"
+        1113us, "旅人栈桥"
     |]
     |> Array.map (fun (id,n) -> {WorldId =id; WorldName = n})
 
