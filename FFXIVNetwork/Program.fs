@@ -11,9 +11,8 @@ let main argv =
         let e = args.ExceptionObject :?> Exception
         logger.Fatal("UnhandledException:{0}", e.ToString())
     )
-    logger.Info("正在加载数据")
     try
-        logger.Info("加载LibFFXIV.ClientData，数据定义为{0}", LibFFXIV.ClientData.TargetVersion.Version)
+        Utils.Data.ItemLookupById(1) |> ignore
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
         let monitor = new Utils.FFXIVNetworkMonitorChs()
@@ -44,11 +43,12 @@ let main argv =
                         logger.Info("找到游戏进程{0}，准备校验版本", pid)
                         let path = IO.Path.Combine(IO.Path.GetDirectoryName(path.Value), "ffxivgame.ver")
                         let ver = IO.File.ReadAllText(path)
-                        if ver = LibFFXIV.ClientData.TargetVersion.Version then
+                        let targetVersion = LibFFXIV.Network.Constants.TargetClientVersion
+                        if ver = targetVersion then
                             logger.Info("版本校验通过，启用数据上传")
                             Utils.RuntimeConfig.VersionCheckPassed <- true
                         else
-                            logger.Error("版本校验失败，本地版本为{0}，定义版本为{1}", ver, LibFFXIV.ClientData.TargetVersion.Version)
+                            logger.Error("版本校验失败，本地版本为{0}，定义版本为{1}", ver, targetVersion)
                         gameVerChecked <- true
                 else
                     logger.Info("没有找到游戏进程")

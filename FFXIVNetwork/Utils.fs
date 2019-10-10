@@ -72,3 +72,21 @@ module ProcessCheck =
             Some(sb.ToString())
         else
             None
+
+module Data = 
+    open LibFFXIV.GameData.Raw
+    open LibFFXIV.GameData.Raw.Base
+    let private items = 
+        seq {
+            NLog.LogManager.GetCurrentClassLogger().Info("正在从LibFFXIV.GameData.Raw解析数据")
+            let col = new XivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
+            let sht = col.GetSelectedSheet("Item", [|"Name"|])
+            for row in sht do 
+                yield row.Key, row.Value.As<string>("Name")
+        } |> readOnlyDict
+
+    let ItemLookupById(id) = 
+        if items.ContainsKey(id) then
+            Some (items.[id])
+        else
+            None

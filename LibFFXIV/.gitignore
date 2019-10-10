@@ -1,9 +1,0 @@
-# Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
-bin
-obj
-Binaries
-_ReSharper.IPHelper
-_ReSharper.Samples
-
-# mstest test results
-TestResults

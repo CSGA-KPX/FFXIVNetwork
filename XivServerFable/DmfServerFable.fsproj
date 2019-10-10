@@ -302,14 +302,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LibFFXIV\LibFFXIV.Network.fsproj">
-      <Name>LibFFXIV.Network</Name>
-      <Project>{da1d6501-6350-47d5-84d3-6aa1d5c1a70c}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\LibXIVServerFable\LibDmfXivShared.fsproj">
       <Name>LibDmfXivShared</Name>
       <Project>{f3a0b381-c67e-492b-a5a0-bae614969d49}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\dmmik\Source\Repos\LibFFXIV\LibFFXIV.Network\LibFFXIV.Network.fsproj">
+      <Name>LibFFXIV.Network</Name>
+      <Project>{84ae55ec-118d-464a-8c79-bc34b57626af}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
