@@ -41,7 +41,6 @@ type UserIDHandler() =
         x.Logger.Info("{0} {1}({2})@{3} :{4}", ct, r.UserName, r.UserId, r.ServerId, r.Text)
 
         if (not <| cache.Contains(r.UserId)) && Utils.RuntimeConfig.CanUploadData() then
-            
             putMapping(r.UserId, r.UserName) |> x.Logger.Info
             cache.Add(r.UserId) |> ignore
 

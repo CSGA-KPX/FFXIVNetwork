@@ -12,12 +12,19 @@ let main argv =
         logger.Fatal("UnhandledException:{0}", e.ToString())
     )
     try
+        
         Utils.Data.ItemLookupById(1) |> ignore
 
         let handler = new FFXIV.PacketHandlerBase.PacketHandler()
         let monitor = new Utils.FFXIVNetworkMonitorChs()
 
-        monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.RawSocket
+        if Utils.Firewall.CheckWinPCap() then
+            logger.Info("检测到WinPcap")
+            monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.WinPCap
+        else
+            logger.Info("未安装WinPcap，使用RawSocket")
+            Utils.Firewall.ShowDialog()
+            monitor.MonitorType <- Machina.TCPNetworkMonitor.NetworkMonitorType.RawSocket
 
         let sent = 
             fun (id : string) (epoch : int64) (data : byte[]) ->
@@ -56,7 +63,7 @@ let main argv =
         with
         | e -> logger.Error("读取游戏版本失败，禁用数据上传\r\n" + e.ToString())
     with
-    | e -> logger.Error(e, "启动失败")
+    | e -> logger.Error("启动失败" + e.ToString())
     while true do 
         let line = Console.ReadLine()
         if line = "1042" then

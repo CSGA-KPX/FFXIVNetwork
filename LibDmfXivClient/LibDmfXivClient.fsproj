@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Library.fs" />
+    <Compile Include="Test.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
   </ItemGroup>
@@ -59,7 +60,7 @@
       <HintPath>..\packages\Fable.Remoting.Json.2.4.0\lib\net461\Fable.Remoting.Json.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core">
-      <HintPath>..\packages\FSharp.Core.4.6.2\lib\net45\FSharp.Core.dll</HintPath>
+      <HintPath>C:\Users\dmmik\Source\Repos\TheBot\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="Newtonsoft.Json">

@@ -2,6 +2,7 @@
 open System
 open System.Reflection
 
+
 [<Literal>]
 let WindowName = "最终幻想XIV"
 
@@ -75,14 +76,13 @@ module ProcessCheck =
 
 module Data = 
     open LibFFXIV.GameData.Raw
-    open LibFFXIV.GameData.Raw.Base
     let private items = 
         seq {
             NLog.LogManager.GetCurrentClassLogger().Info("正在从LibFFXIV.GameData.Raw解析数据")
             let col = new XivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
-            let sht = col.GetSelectedSheet("Item", [|"Name"|])
+            let sht = col.GetSheet("Item", [|"Name"|])
             for row in sht do 
-                yield row.Key, row.Value.As<string>("Name")
+                yield row.Key.Key, row.As<string>("Name")
         } |> readOnlyDict
 
     let ItemLookupById(id) = 
@@ -90,3 +90,23 @@ module Data =
             Some (items.[id])
         else
             None
+
+module Firewall = 
+    open System.Net
+    open System.Runtime.InteropServices
+
+    let ShowDialog() = 
+        let ep = new IPEndPoint(0L, 65500)
+        let ll = new Sockets.TcpListener(ep)
+        ll.Start()
+        ll.Stop()
+
+    [<DllImport("kernel32", SetLastError=true)>]
+    extern IntPtr LoadLibrary(string lpFileName)
+
+    let CheckWinPCap() = 
+        let dllName = "wpcap.dll"
+        if LoadLibrary(dllName) = IntPtr.Zero then
+            false
+        else
+            true
