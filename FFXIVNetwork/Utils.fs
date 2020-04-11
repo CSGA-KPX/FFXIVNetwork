@@ -1,6 +1,8 @@
 ﻿module Utils
 open System
+open System.Collections.Generic
 open System.Reflection
+open Machina.FFXIV
 
 
 [<Literal>]
@@ -17,7 +19,7 @@ type FFXIVNetworkMonitorChs() =
             mon <- None
         if isNull x.MessageReceived then
             raise <| new ArgumentException("MessageReceived delegate must be specified.")
-        mon <- Some( new Machina.TCPNetworkMonitor() )
+        mon <- Some(Machina.TCPNetworkMonitor())
         mon.Value.ProcessID <- x.ProcessID
         if mon.Value.ProcessID = 0u then
             mon.Value.WindowName <- WindowName
@@ -36,21 +38,24 @@ type FFXIVNetworkMonitorChs() =
         mon.Value.Stop()
         mon <- None
 
-        let sent = x.GetType().GetField("_sentDecoders", BindingFlags.NonPublic ||| BindingFlags.Instance)
-        let recv = x.GetType().GetField("_receivedDecoders", BindingFlags.NonPublic ||| BindingFlags.Instance)
-
-        sent.SetValue(x, box(null))
-        recv.SetValue(x, box(null))
-
 let UploadClientData = true
 
 module RuntimeConfig = 
+    let logger = NLog.LogManager.GetCurrentClassLogger()
+
     let mutable LogRawPacketData   = true
     let mutable LogGamePacket      = true
     let mutable VersionCheckPassed = false
     let mutable CurrentWorld       = 0us
 
+    let PrintStatus() = 
+        if not VersionCheckPassed  then
+            logger.Warn("无法提交数据：版本检查失败")
+        if CurrentWorld = 0us then
+            logger.Warn("无法提交数据：区域不明")
+
     let CanUploadData() = 
+        PrintStatus()
         VersionCheckPassed && UploadClientData
 
     let IsWorldReady() = 
@@ -76,13 +81,13 @@ module ProcessCheck =
 
 module Data = 
     open LibFFXIV.GameData.Raw
+    let private col = EmbeddedXivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
     let private items = 
         seq {
             NLog.LogManager.GetCurrentClassLogger().Info("正在从LibFFXIV.GameData.Raw解析数据")
-            let col = new XivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
             let sht = col.GetSheet("Item", [|"Name"|])
             for row in sht do 
-                yield row.Key.Key, row.As<string>("Name")
+                yield row.Key.Main, row.As<string>("Name")
         } |> readOnlyDict
 
     let ItemLookupById(id) = 

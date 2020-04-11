@@ -59,7 +59,13 @@ type PacketHandler() as x =
         x.AddAssembly(Assembly.GetExecutingAssembly())
 
     member x.AddAssembly(asm : Assembly) = 
-        let types = asm.GetTypes()
+        let types = 
+            try
+                asm.GetTypes()
+            with
+            | :? ReflectionTypeLoadException as e ->
+                e.Types |> Array.filter (isNull >> not)
+
         let pbt   = typeof<PacketHandlerBase>
         let att   = typeof<PacketHandleMethodAttribute>
         
