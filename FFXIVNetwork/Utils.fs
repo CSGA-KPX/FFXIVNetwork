@@ -43,7 +43,6 @@ let UploadClientData = true
 module RuntimeConfig = 
     let logger = NLog.LogManager.GetCurrentClassLogger()
 
-    let mutable LogRawPacketData   = true
     let mutable LogGamePacket      = true
     let mutable VersionCheckPassed = false
     let mutable CurrentWorld       = 0us

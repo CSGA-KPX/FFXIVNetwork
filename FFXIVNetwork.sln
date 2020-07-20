@@ -15,9 +15,9 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibDmfXivClient", "LibDmfXi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LibFFXIV", "LibFFXIV", "{86D0B18B-41D3-4EB2-B99D-0D0D11DC33FA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.GameData.Raw", "C:\Users\dmmik\Source\Repos\LibFFXIV\LibFFXIV.GameData.Raw\LibFFXIV.GameData.Raw.fsproj", "{EE879DDD-F086-4496-A802-94347995BC9C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.GameData.Raw", "..\LibFFXIV\LibFFXIV.GameData.Raw\LibFFXIV.GameData.Raw.fsproj", "{EE879DDD-F086-4496-A802-94347995BC9C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.Network", "C:\Users\dmmik\Source\Repos\LibFFXIV\LibFFXIV.Network\LibFFXIV.Network.fsproj", "{84AE55EC-118D-464A-8C79-BC34B57626AF}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LibFFXIV.Network", "..\LibFFXIV\LibFFXIV.Network\LibFFXIV.Network.fsproj", "{84AE55EC-118D-464A-8C79-BC34B57626AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

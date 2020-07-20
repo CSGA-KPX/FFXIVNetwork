@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="C:\Users\dmmik\Source\Repos\LibFFXIV\LibFFXIV.Network\LibFFXIV.Network.fsproj" />
+    <ProjectReference Include="..\..\LibFFXIV\LibFFXIV.Network\LibFFXIV.Network.fsproj" />
   </ItemGroup>
 
 </Project>

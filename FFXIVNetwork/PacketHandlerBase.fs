@@ -53,7 +53,6 @@ type PacketHandler() as x =
     let handlersIn = new Dictionary<LibFFXIV.Network.Constants.Opcodes, (PacketHandlerBase *  MethodInfo)>()
     let logger     = NLog.LogManager.GetCurrentClassLogger()
     let plogger    = NLog.LogManager.GetLogger("PacketLogger")
-    let rawLogger    = NLog.LogManager.GetLogger("RawTCPPacket")
 
     do
         x.AddAssembly(Assembly.GetExecutingAssembly())
@@ -105,8 +104,6 @@ type PacketHandler() as x =
             | PacketTypes.ServerHandShake
                 -> ()
             | PacketTypes.GameMessage ->
-                if Utils.RuntimeConfig.LogRawPacketData then
-                    rawLogger.Trace(sp.Data.ToString())
                 let gp = new FFXIVGamePacket(sp.Data)
                 x.LogGamePacketOne(gp, direction, epoch)
                 try

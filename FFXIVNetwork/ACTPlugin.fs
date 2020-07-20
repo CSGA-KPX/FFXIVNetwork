@@ -5,28 +5,27 @@ open System.Windows.Forms
 open Advanced_Combat_Tracker
 open NLog
 
-
 type FFXIVNetworkPlugin () = 
     inherit UserControl()
+
     let tb = new TextBox()
 
     member private x.ConfigNLog() = 
         let config = Config.LoggingConfiguration()
         
-        let methodTarget = new Targets.MethodCallTarget("WinFormTarget", (fun e objs -> 
+        let methodTarget = new Targets.MethodCallTarget("WinFormTarget", (fun _ objs -> 
             let msg = objs.[0].ToString() + Environment.NewLine
             if ActGlobals.oFormActMain.InvokeRequired then
                 ActGlobals.oFormActMain.Invoke(Action(fun () -> tb.AppendText(msg))) |> ignore
             else
                 tb.AppendText(msg)
         ))
+
         let param = Targets.MethodCallParameter()
         param.Layout <- Layouts.SimpleLayout("${longdate}|${level:uppercase=true}|${logger}|${message}")
         methodTarget.Parameters.Add(param)
         
-        
         config.AddRule(LogLevel.Info, LogLevel.Fatal, methodTarget)
-
         LogManager.Configuration <- config
 
     override x.CreateParams = 
@@ -46,18 +45,14 @@ type FFXIVNetworkPlugin () =
             tb.Multiline <- true
             tb.ScrollBars <- ScrollBars.Vertical
             tb.TabIndex <- 0
-
             tb.Anchor <- AnchorStyles.Left ||| AnchorStyles.Top
             tb.Dock <- DockStyle.Fill
+            x.Controls.Add(tb)
 
             x.Anchor <- AnchorStyles.Left ||| AnchorStyles.Top
             x.Dock <- DockStyle.Fill
-
-            x.Controls.Add(tb)
+            x.DoubleBuffered <- true
+            tabPage.Controls.Add(x)
 
             x.ConfigNLog()
-
-            x.DoubleBuffered <- true
-
-            tabPage.Controls.Add(x)
             Threading.Tasks.Task.Run(fun () -> CommonStartup.Startup(Array.empty)) |> ignore
