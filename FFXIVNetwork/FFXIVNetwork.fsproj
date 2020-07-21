@@ -53,7 +53,7 @@
     <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x86</PlatformTarget>
     <OtherFlags>/win32manifest:FFXIVNetwork.exe.manifest</OtherFlags>
-    <StartAction>Program</StartAction>
+    <StartAction>Project</StartAction>
     <StartProgram>K:\ACT\Advanced Combat Tracker.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">

@@ -36,25 +36,20 @@ type TreasureMapHandler() =
             let key = t.Key
             let loc = t.AsRow("Location")
             let map = loc.AsRow("Map")
-            //Saintcoinach的Map.json注释似乎有问题，
-            //let sf = map.As<uint16>("SizeFactor") |> int
-            //let offsetX = map.As<int16>("Offset{X}") |> int
-            //let offsetY = map.As<int16>("Offset{Y}") |> int
-            //let mapName = map.AsRow("PlaceName").As<string>("Name")
-
-            //Saintcoinach的Map.json注释似乎有问题，
-            let sf = map.As<uint16>(7) |> int
-            let offsetX = map.As<int16>(8) |> int
-            let offsetY = map.As<int16>(9) |> int
-            let mapName = map.AsRow(11).As<string>("Name")
+            
+            let sf = map.As<uint16>("SizeFactor") |> int
+            let offsetX = map.As<int16>("Offset{X}") |> int
+            let offsetY = map.As<int16>("Offset{Y}") |> int
+            let mapName = map.AsRow("PlaceName").As<string>("Name")
 
             let mapX = ToMapCoordinate3d(sf, loc.As<single>("X"), offsetX)
             let mapY = ToMapCoordinate3d(sf, loc.As<single>("Z"), offsetY)
 
-            let dictKey = sprintf "%i:%i" (rank.[key.Main]) key.Alt
-            let data    = sprintf "%s (%f, %f)" mapName mapX mapY
-            let url     = sprintf "https://map.wakingsands.com/#f=mark&x=%f&y=%f&id=%i" mapX mapY map.Key.Main
-            yield dictKey, (data + "\r\n" + url)
+            if rank.ContainsKey(key.Main) then
+                let dictKey = sprintf "%i:%i" (rank.[key.Main]) key.Alt
+                let data    = sprintf "%s (%f, %f)" mapName mapX mapY
+                let url     = sprintf "https://map.wakingsands.com/#f=mark&x=%f&y=%f&id=%i" mapX mapY map.Key.Main
+                yield dictKey, (data + "\r\n" + url)
         |] |> readOnlyDict
 
     let searchTreasureSpots (eventItem : uint32) (index : uint16) = 
