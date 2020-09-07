@@ -1,10 +1,10 @@
-﻿open System
+﻿module Program
+
+open System
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Fable.Remoting.Server
 open Fable.Remoting.AspNetCore
-open Mono.Unix
-open Mono.Unix.Native
 open Microsoft.AspNetCore.Http
 
 let errorHandler (exn: Exception) (routeInfo: RouteInfo<HttpContext>) = 
