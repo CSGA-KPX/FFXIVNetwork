@@ -15,7 +15,6 @@ type TreasureMapHandler() =
     // (EventItem.MainKey:TreasureSpots.AltKey -> mapName mapX mapY
     let treasureSpots = 
         let col = new LibFFXIV.GameData.Raw.EmbeddedXivCollection(LibFFXIV.GameData.Raw.XivLanguage.ChineseSimplified)
-        let col = col:> LibFFXIV.GameData.Raw.IXivCollection
         let ts =
             col.GetSheet("TreasureSpot")
             |> Seq.filter (fun x -> x.As<string>("Location") <> "0")
@@ -77,8 +76,7 @@ type CFNotifyHandler() =
 
     let instances = 
         let col = new LibFFXIV.GameData.Raw.EmbeddedXivCollection(LibFFXIV.GameData.Raw.XivLanguage.ChineseSimplified)
-        let icol = col:> LibFFXIV.GameData.Raw.IXivCollection
-        let cfc = icol.GetSheet("ContentFinderCondition")
+        let cfc = col.GetSheet("ContentFinderCondition")
         [|
             for row in cfc do 
                 let k = row.Key.Main |> uint16

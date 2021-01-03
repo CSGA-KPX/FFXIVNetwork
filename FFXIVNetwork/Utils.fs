@@ -80,7 +80,8 @@ module ProcessCheck =
 
 module Data = 
     open LibFFXIV.GameData.Raw
-    let private col = EmbeddedXivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
+
+    let private col = new EmbeddedXivCollection(XivLanguage.None) 
     let private items = 
         seq {
             NLog.LogManager.GetCurrentClassLogger().Info("正在从LibFFXIV.GameData.Raw解析数据")

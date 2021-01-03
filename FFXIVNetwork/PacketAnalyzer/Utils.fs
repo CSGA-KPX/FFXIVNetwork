@@ -124,7 +124,7 @@ type internal SearchPattern =
             String (pb.ToString())
 
 type Xiv private () = 
-    let col = new EmbeddedXivCollection(XivLanguage.ChineseSimplified) :> IXivCollection
+    let col = new EmbeddedXivCollection(XivLanguage.ChineseSimplified)
     let items = col.GetSheet("Item")
 
     static let inst = Xiv()

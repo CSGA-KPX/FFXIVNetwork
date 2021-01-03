@@ -41,7 +41,7 @@ let configureApp (app : IApplicationBuilder) =
 let main argv = 
     WebHostBuilder()
         .UseKestrel()
-        .UseUrls("http://127.0.0.1:5000")
+        .UseUrls("http://127.0.0.1:5001")
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()
